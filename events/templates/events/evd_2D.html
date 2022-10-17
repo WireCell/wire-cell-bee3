@@ -1,0 +1,41 @@
+{% load static %}
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Plots</title>
+    <link rel="stylesheet" href="{% static 'css/lib/bootstrap.min.css' %}" media="screen" />
+    <link rel="stylesheet" href="{% static 'css/bee.css' %}" />
+  </head>
+
+  <body>
+    <div class="container">
+<!--       <div class="page-header">
+        <h1>
+          Plots
+        </h1>
+      </div> -->
+
+      <div class='span12' align='left'>
+        <a href="{{base_plots_url}}evd_y.png"><img class='pannable' src="{{base_plots_url}}evd_y.png" style="height:500px;" /></a>
+        <a href="{{base_plots_url}}evd_v.png"><img class='pannable' src="{{base_plots_url}}evd_v.png" style="height:500px;" /></a>
+        <a href="{{base_plots_url}}evd_u.png"><img class='pannable' src="{{base_plots_url}}evd_u.png" style="height:500px;" /></a>
+      </div>
+
+      <div class='span12' align='left'>
+        <h3>Deconvoluted 2D Plots</h3>
+        <ul>
+          <li><a href="{{base_plots_url}}evd_y_decon.png">Y-plane</a></li>
+          <li><a href="{{base_plots_url}}evd_v_decon.png">V-plane</a></li>
+          <li><a href="{{base_plots_url}}evd_u_decon.png">U-plane</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <script type="text/javascript" src="{% static 'js/lib/jquery-2.1.4.min.js' %}"></script>
+
+  </body>
+
+</html>

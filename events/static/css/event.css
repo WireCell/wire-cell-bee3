@@ -1,0 +1,165 @@
+body {
+    /*font-family: sans-serif;*/
+    /*font-size: 16px;*/
+    /*text-align:center;*/
+    background-color: #000;
+    /*background-color: white;*/
+    margin: 0px;
+    overflow: hidden;
+}
+
+.navbar {
+    margin-bottom: 0;
+}
+
+.not-active-link {
+   pointer-events: none;
+   cursor: default;
+}
+
+#info {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    /*width: 100%;*/
+    padding: 5px;
+}
+#statusbar {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    padding: 5px;
+    color: #ee5f5b;
+    text-align: right;
+}
+
+#fullscreeninfo {
+    position: absolute;
+    size: 20px;
+    top: 20px;
+    left: 120px;
+    padding: 20px;
+    color: #ee5f5b;
+    text-align: left;
+}
+
+#cluster {
+    position: absolute;
+    top: 100px;
+    right: 350px;
+    width: 200px;
+    padding: 5px;
+    display: none;
+    /*background-color: #ccc*/
+}
+
+#scan {
+    position: absolute;
+    top: 80px;
+    right: 220px;
+    width: 180px;
+    padding: 5px;
+    display: none;
+    background-color: #fff
+}
+
+#progressbar {
+    margin-top: 5px;
+    height: 10px;
+}
+#progressbar .ui-progressbar-value {
+    background: #ccc
+}
+
+#event-info {
+    position: absolute;
+    float: right;
+    bottom: 10px;
+    right: 250px;
+    width: 200px;
+}
+
+#event-text {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+}
+
+.invert-color {
+    -webkit-filter: invert(.99);
+    filter: invert(.99);
+}
+
+#imgbar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px;
+    color: #feffca;
+}
+
+#loadingbar {
+    position: absolute;
+    bottom: 0px;
+    width: 25%;
+}
+#statsbar {
+    position: absolute;
+    top: 0px;
+    display: none;
+}
+
+#infobar {
+    position: absolute;
+    left: 10px;
+    top: 46px;
+    display: none;
+}
+
+#mc {
+    color: #999;
+    position: absolute;
+    left: 5px;
+    bottom: 20px;
+    font-size: 1.2em;
+    display: none;
+    /*width: 500px;*/
+    /*background-color: #111;*/
+}
+
+#sst {
+    color: #999;
+    text-align: center;
+    border: 1px solid;
+    padding-top: 5px;
+    padding-bottom: 4px;
+}
+
+#sst-docker {
+    position: absolute;
+    left: 10px;
+    top: 80px;
+    width: 200px;
+    color: #999;
+}
+
+.myslider.ui-slider {
+    margin-top: 5px;
+    margin-bottom: 2.4em;
+}
+
+#cmdModal {
+    top:5%;
+/*right:50%;*/
+/*outline: none;*/
+}
+
+#cmdModal td:nth-child(2) {color: #c20078;}
+#cmdModal td:nth-child(4) {color: #c20078;}
+
+/*a {color: #82beb7;}*/
+.function {font-weight: bold;}
+.key {color: orange; font-weight: bold;}
+.hotkey {float: right; color: #c20078;}
+.warning {color: #af6f09;}
+.success {color: #2a7e19;}
