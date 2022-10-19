@@ -190,7 +190,7 @@ class Scene3D {
         this.camera.active.position.x = this.controller.active.target.x,
         this.camera.active.position.y = this.store.config.camera.depth,
         this.camera.active.position.z = this.controller.active.target.z,
-        this.controller.active.rotateLeft(Math.PI/2);
+        this.controller.active.rotateLeftUser(Math.PI/2);
         this.controller.active.update()
 
         // the method below changes the rotation axis which may not be desired

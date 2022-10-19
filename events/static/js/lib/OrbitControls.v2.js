@@ -324,12 +324,16 @@
 				sphericalDelta.theta -= angle;
 
 			}
+			//added by Chao to expose the function.
+			this.rotateLeftUser = rotateLeft;
 
 			function rotateUp( angle ) {
 
 				sphericalDelta.phi -= angle;
 
 			}
+			//added by Chao to expose the function.
+			this.rotateUpUser = rotateUp;
 
 			const panLeft = function () {
 

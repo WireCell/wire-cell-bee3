@@ -99,23 +99,25 @@ class MC {
             } 
             else { material = chargedMaterial }
 
-            geometry = new THREE.Geometry();
+            let points = [];
             if (node.data.traj_x == null) {
-                geometry.vertices.push(
+                points.push(
                     new THREE.Vector3(...exp.toLocalXYZ(...node.data.start)),
                     new THREE.Vector3(...exp.toLocalXYZ(...node.data.end))
                 );
             }
+            
             else {
                 let nPoints = node.data.traj_x.length;
                 for (let j = 0; j < nPoints; j++) {
-                    geometry.vertices.push(
+                    points.push(
                         new THREE.Vector3(...exp.toLocalXYZ(
                             node.data.traj_x[j], node.data.traj_y[j], node.data.traj_z[j])
                         )
                     );
                 }
             }
+            geometry = new THREE.BufferGeometry().setFromPoints( points );
             line = new THREE.Line(geometry, material);
             this.listOfMCObjects.push(line);
             scene.add(line);
