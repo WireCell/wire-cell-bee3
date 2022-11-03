@@ -5,7 +5,6 @@
 *.zip
 *.pcm
 test.*
-data/
 tmp/
 fabfile.py
 wc.json
