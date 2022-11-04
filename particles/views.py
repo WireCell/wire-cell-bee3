@@ -40,3 +40,12 @@ def decay_list(request, pdg):
             'name': name,
             'decays': decays,
         })
+
+def details(request, pdg):
+    db = PDGParticles()
+    particle = db.one(pdg)
+    if not particle:
+        return HttpResponse(f'particle with pdg code {pdg} does not exist.')
+    return render(request, 'particles/details.html', {
+        'particle': particle,
+    })

@@ -24,11 +24,12 @@
               <th>Mass (GeV)</th>
               <th>Width</th>
               <th>Class</th>
-              <th>Decay</th>
+              <th>Decay Channel</th>
             </thead>
             {% for particle in particles %}
             <tr>
-              <td>{{ particle.name }}</td>
+              <td><a href="{% url 'details' particle.pdg %}" style="text-decoration:none">{{ particle.name }}</a></td>
+              <!-- <td>{{ particle.name }}</td> -->
               <td>{{ particle.pdg }}</td>
               <td>{{ particle.mass }}</td>
               <td>{{ particle.width }}</td>

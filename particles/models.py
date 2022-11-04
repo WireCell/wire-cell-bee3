@@ -20,4 +20,7 @@ class PDGParticles:
         return [x for x in self.PDG['particles'] if x['pdg']>0]
     
     def decays(self, pdg):
-        return self.nameMap[pdg]['decay']
+        return self.nameMap[pdg].get('decay', [])
+
+    def one(self, pdg):
+        return self.nameMap.get(pdg, {})
