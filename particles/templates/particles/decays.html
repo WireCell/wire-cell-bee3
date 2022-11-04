@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>PDG Particle List</title>
+    <title>Decay List: {{ primary }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.2/css/bootstrap.min.css" integrity="sha512-CpIKUSyh9QX2+zSdfGP+eWLx23C8Dj9/XmHjZY2uDtfkdLGo0uY12jgcnkX9vXOgYajEKb/jiw67EYm+kBf+6g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- <link rel="stylesheet" href="{% static 'css/bee.css' %}" /> -->
   </head>
@@ -12,28 +12,20 @@
   <body>
     <div class="container">
       <header>
-        <h1>PDG Particle List</h1>
+        <h1>Decay List: {{name}} ({{ pdg }})</h1>
       </header>
 
       <div class='row'>
         <div class='col-12'>
           <table class="table table-striped table-bordered table-hover" id="table">
             <thead>
-              <th>Name</th>
-              <th>PDG code</th>
-              <th>Mass (GeV)</th>
-              <th>Width</th>
-              <th>Class</th>
+              <th>Braching Ratio</th>
               <th>Decay</th>
             </thead>
-            {% for particle in particles %}
+            {% for decay in decays %}
             <tr>
-              <td>{{ particle.name }}</td>
-              <td>{{ particle.pdg }}</td>
-              <td>{{ particle.mass }}</td>
-              <td>{{ particle.width }}</td>
-              <td>{{ particle.class_name }}</td>
-              <td><a href="{% url 'decay_list' particle.pdg %}">{{ particle.n_decay }}</a></td>
+              <td>{{ decay.br }}</td>
+              <td>{{ decay.formula }}</td>
             </tr>
             {% endfor %}
           </table>
@@ -42,11 +34,6 @@
       </div>
 
     </div>
-    <script type="text/javascript" src="{% static 'js/lib/jquery-2.1.4.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/lib/picnet.table.filter.min.js' %}"></script>
-    <script>
-      $('#table').tableFilter();
-    </script>
   </body>
 
 </html>

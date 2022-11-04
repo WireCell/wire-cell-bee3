@@ -691,7 +691,8 @@ class ProtoDUNEVDTest extends Experiment {
     constructor() {
         super('protodunevd-test');
         this.updateTPCLocation([
-            [-602, 542, -600, 600, -421, 720],
+            // [-602, 542, -600, 600, -421, 720],
+            [-426, 365, -428, 428, -278, 577],
             [-315, 313, -342, 342, -5, 304]
         ]);
         this.tpc.viewAngle = [-45, 45, 0];
