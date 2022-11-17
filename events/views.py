@@ -227,3 +227,18 @@ def upload(request):
         return HttpResponse(unique_name)
     else:
         return HttpResponse('No Get, Please POST')
+
+def wires(request):
+    filename = settings.MEDIA_ROOT / 'WireGeometry' / 'protodunevd.json'
+    data = open(filename).read()
+    # print(request.headers)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return HttpResponse(data)
+    else:
+        data = json.loads(data)
+        return render(request, 'events/wires.html', {
+            'experiment': 'protodune-vd',
+            'anodes': data['Store']['anodes'],
+            'faces': [0],
+            'planes': [0, 1, 2],
+        }) 

@@ -1,0 +1,90 @@
+{% load static %}
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{ particle.name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.2/css/bootstrap.min.css" integrity="sha512-CpIKUSyh9QX2+zSdfGP+eWLx23C8Dj9/XmHjZY2uDtfkdLGo0uY12jgcnkX9vXOgYajEKb/jiw67EYm+kBf+6g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  </head>
+
+  <body>
+    <div class="container" id="app">
+      <header>
+        <h1 style="text-align: center;">{{particle.name}}</h1>
+      </header>
+
+
+      <table class="table" id="table">
+        <thead>
+          <th>Name</th>
+          <th>PDG code</th>
+          <th>Mass (GeV)</th>
+          <th>Width</th>
+          <th>Class</th>
+          <th>Decay</th>
+        </thead>
+        <tr>
+          <td>{{ particle.name }}</td>
+          <td>{{ particle.pdg }}</td>
+          <td id="mass">{{ particle.mass }}</td>
+          <td>{{ particle.width }}</td>
+          <td>{{ particle.class_name }}</td>
+          <td><a href="{% url 'decay_list' particle.pdg %}">{{ particle.n_decay }}</a></td>
+        </tr>
+      </table>
+
+
+      <h3 style="margin-top: 30px;">Kinematics</h3>
+      <table class="table table-striped table-bordered" id="table">
+        <thead>
+          <th>velocity (c)</th>
+          <th>gamma</th>
+          <th>momentum (GeV)</th>
+          <th>energy (GeV)</th>
+          <th>KE (MeV)</th>
+        </thead>
+        <tr>
+          <td><input v-model.number.lazy="v" /></td>
+          <td><input v-model.number.lazy="gamma" /></td>
+          <td><input v-model.number.lazy="mom" /></td>
+          <td><input v-model.number.lazy="E" /></td>
+          <td><input v-model.number.lazy="KE" /></td>
+        </tr>
+      </table>
+
+    </div>
+  </body>
+
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+  let m = parseFloat(document.getElementById('mass').innerHTML);
+  Vue.createApp({
+    delimiters: ["[[", "]]"],
+    data() {
+      return { v: 0.0 }
+    },
+    computed: {
+      gamma: {
+        get() { return 1/Math.sqrt(1-this.v*this.v); },
+        set(val) { this.v = Math.sqrt(1-1/val/val); },
+      },
+      mom: {
+        get() { return this.gamma*m*this.v; },
+        set(val) { this.v = val/Math.sqrt(m*m+val*val); },
+      },      
+      E: {
+        get() { return this.gamma*m; },
+        set(val) { this.v = Math.sqrt(1-1/val/val*m*m); },
+      },
+      KE: { // in MeV
+        get() { return (this.E-m)*1000; },
+        set(val) { this.E = val/1000.+m; },
+      },
+    },
+  }).mount('#app')
+</script>
+
+
+</html>

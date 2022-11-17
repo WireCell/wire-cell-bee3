@@ -10,4 +10,6 @@ urlpatterns = [
     re_path(r'^collection/(?P<collection_id>.+)/$', views.collection, name='collection'),
 
     path('upload/', views.upload, name='upload'),
+
+    path('wires/', views.wires, name='wires'),
 ]

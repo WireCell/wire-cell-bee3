@@ -1,0 +1,114 @@
+{% load static %}
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Wire Explorer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.2/css/bootstrap.min.css" integrity="sha512-CpIKUSyh9QX2+zSdfGP+eWLx23C8Dj9/XmHjZY2uDtfkdLGo0uY12jgcnkX9vXOgYajEKb/jiw67EYm+kBf+6g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{% static 'css/bee.css' %}" />
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div id="gui" style="position: absolute; top: 5px; left: 12px"></div>
+      <div class='row no-gutters mt-1'>
+          <div class='col-8'>
+              <div id="canvas" style="height:800px; border: 1px solid green;"></div>
+          </div>
+          <div class="col-4" id="vue">
+            <table class="table caption-top">
+              <caption>Plane #: [[ planeId ]] | Wire Range: [[wireFirst]] - [[wireLast]]</caption>
+              <tbody>
+                <tr>
+                  <th scope="row">Anode</th>
+                  <td>
+                    {% for x in anodes %}
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" name="inlineRadioOptions" v-model="anode"  value="{{ forloop.counter0 }}">
+                      <label class="form-check-label">{{ x.Anode.ident }}</label>
+                    </div>
+                    {% endfor %}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Face</th>
+                  <td>
+                    {% for x in faces %}
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" v-model="face" value="{{ x }}">
+                      <label class="form-check-label">{{ x }}</label>
+                    </div>
+                    {% endfor %}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Plane</th>
+                  <td>
+                    {% for x in planes %}
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" v-model="plane" value="{{ x }}">
+                      <label class="form-check-label">{{ x }}</label>
+                    </div>
+                    {% endfor %}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="input-group mt-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text">Draw wire</span>
+              </div>
+              <input type="number" class="form-control" v-model.number="wireId">
+              {% comment %} <div class="input-group-append">
+                <button class="btn btn-outline-primary" type="button">Draw</button>
+              </div> {% endcomment %}
+            </div>
+
+            <div class="card">
+              {% comment %} <h5 class="card-header"></h5> {% endcomment %}
+              <div class="card-body">
+                {% comment %} <h5 class="card-title">Wire [[wireId]] details</h5> {% endcomment %}
+                {% comment %} <p class="card-text">Wire details.</p> {% endcomment %}
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item">Channel #: [[ channel ]]</li>
+                  <li class="list-group-item">Head (mm): [[ headLoc ]]</li>
+                  <li class="list-group-item">Tail (mm): [[ tailLoc ]]</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="input-group mt-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text">Draw from wire list</span>
+              </div>
+              <input type="text" class="form-control" v-model.lazy="wireList">
+              {% comment %} <div class="input-group-append">
+                <button class="btn btn-outline-primary" type="button">Draw</button>
+              </div> {% endcomment %}
+            </div>
+            <div class="card">
+              {% comment %} <h5 class="card-header"></h5> {% endcomment %}
+              <div class="card-body">
+                {% comment %} <h5 class="card-title">Syntax</h5> {% endcomment %}
+                <p class="card-text">Separate wires by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step)</p>
+                <p class="card-text">Example: 2, 3, 5:8, 10:100:10</p>
+              </div>
+            </div>
+            
+          </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.18.2/TweenMax.min.js"></script>
+    <script type="text/javascript" src="{% static 'js/lib/dat.gui.min.js' %}"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.145.0/three.min.js"></script>
+    <script type="text/javascript" src="{% static 'js/lib/OrbitControls.v2.js' %}"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    {% comment %} <script type="text/javascript" src="{% static 'js/bee/dist/wires.js' %}"></script> {% endcomment %}
+    <script type="text/javascript" src="{% static 'js/bee/dist/wires-vue.js' %}"></script>
+
+  </body>
+
+</html>

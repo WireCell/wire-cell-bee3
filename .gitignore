@@ -19,4 +19,6 @@ __pycache__/
 *.sqlite3
 .git/
 venv/
+node_modules/
+package-lock.json
 
