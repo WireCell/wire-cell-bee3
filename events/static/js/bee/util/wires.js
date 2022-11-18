@@ -8,10 +8,8 @@ class Wires {
 
         .then( res => res.json() )
         .then( data => {
-            this.store = data.Store
-            console.log(this.store)
-            this.listOfLines = []
-
+            this.initStore(data)
+            
             this.initScene()
             this.initGUI()
 
@@ -19,6 +17,27 @@ class Wires {
         })
     }
 
+    initStore(data) {
+        this.store = data.Store
+        this.store.channels = {}
+        this.store.summary = {}
+        let len = this.store.wires.length
+        this.store.summary.nWire = len
+        this.store.summary.nChannel = 0
+        for (let i=0; i<len; i++) {
+            let w = this.wire(i)
+            let ch = w.channel
+            if (this.store.channels[ch] == undefined) {
+                this.store.channels[ch] = [i]
+                this.store.summary.nChannel++
+            }
+            else {
+                this.store.channels[ch].push(i)
+            }
+        }
+        console.log(this.store)
+
+    }
 
     anode(i) { return this.store.anodes[i].Anode; }
     face(i) { return this.store.faces[i].Face; }
@@ -28,6 +47,7 @@ class Wires {
     xyz(p) { return [p.x/10, p.y/10, p.z/10] }
 
     initScene() {
+        this.listOfLines = []
         this.canvas = document.getElementById('canvas')
         this.scene = new THREE.Scene();
 
@@ -170,7 +190,7 @@ class Wires {
 
     }
 
-    drawWires({planeId, wireId, wireList}) {
+    drawWires({planeId, wireId, wireList, chList}) {
         for (let i = 0; i < this.listOfLines.length; i++) {
             this.scene.remove(this.listOfLines[i]);
         }
@@ -186,6 +206,11 @@ class Wires {
         }
         else if (wireList != undefined) {
             ws = wireList
+        }
+        else if (chList != undefined) {
+            for (let ch of chList) {
+                ws.push(...this.store.channels[ch])
+            }
         }
         for (let i=0; i<ws.length; i++ ) {
             let w

@@ -148,6 +148,6 @@ elif SITE_TWISTER:
 if SITE_LOCAL:
     MEDIA_ROOT = BASE_DIR / 'tmp'
 else:
-    MEDIA_ROOT = conf.get('common', 'MEDIA_ROOT')
+    MEDIA_ROOT = Path(conf.get('common', 'MEDIA_ROOT'))
 
 SITE_ID = 1

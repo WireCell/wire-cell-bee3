@@ -18,7 +18,7 @@
           </div>
           <div class="col-4" id="vue">
             <table class="table caption-top">
-              <caption>Plane #: [[ planeId ]] | Wire Range: [[wireFirst]] - [[wireLast]]</caption>
+              <caption>Plane: [[ planeId ]] | Wire Range: [[wireFirst]] - [[wireLast]]</caption>
               <tbody>
                 <tr>
                   <th scope="row">Anode</th>
@@ -57,44 +57,38 @@
             </table>
 
             <div class="input-group mt-3">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Draw wire</span>
-              </div>
+              <button class="btn btn-primary" type="button" @click="drawWire">Draw wire (0 - [[ nWire-1 ]])</button>
               <input type="number" class="form-control" v-model.number="wireId">
-              {% comment %} <div class="input-group-append">
-                <button class="btn btn-outline-primary" type="button">Draw</button>
-              </div> {% endcomment %}
+            </div>
+            <div class="card">
+              <div class="card-body">
+                <p class="card-text" >Channel: [[ wireChannel ]] <br /> Head (mm): [[ headLoc ]] <br/> Tail (mm): [[ tailLoc ]]</p>
+              </div>
             </div>
 
+            <div class="input-group">
+              <button class="btn btn-primary" type="button" @click="drawChannel">Draw channel (0 - [[ nChannel-1 ]])</button>
+              <input type="number" class="form-control" v-model.number="chId">
+            </div>
             <div class="card">
-              {% comment %} <h5 class="card-header"></h5> {% endcomment %}
               <div class="card-body">
-                {% comment %} <h5 class="card-title">Wire [[wireId]] details</h5> {% endcomment %}
-                {% comment %} <p class="card-text">Wire details.</p> {% endcomment %}
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item">Channel #: [[ channel ]]</li>
-                  <li class="list-group-item">Head (mm): [[ headLoc ]]</li>
-                  <li class="list-group-item">Tail (mm): [[ tailLoc ]]</li>
-                </ul>
+                <p class="card-text" >Wires: [[ chWires ]] </p>
               </div>
             </div>
 
             <div class="input-group mt-3">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Draw from wire list</span>
-              </div>
+              <button class="btn btn-primary" type="button" @click="drawWireList">Draw from wire list</button>
               <input type="text" class="form-control" v-model.lazy="wireList">
-              {% comment %} <div class="input-group-append">
-                <button class="btn btn-outline-primary" type="button">Draw</button>
-              </div> {% endcomment %}
             </div>
             <div class="card">
-              {% comment %} <h5 class="card-header"></h5> {% endcomment %}
               <div class="card-body">
-                {% comment %} <h5 class="card-title">Syntax</h5> {% endcomment %}
                 <p class="card-text">Separate wires by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step)</p>
                 <p class="card-text">Example: 2, 3, 5:8, 10:100:10</p>
               </div>
+            </div>
+            <div class="input-group">
+              <button class="btn btn-primary" type="button" @click="drawChList">Draw from channel list</button>
+              <input type="text" class="form-control" v-model.lazy="chList">
             </div>
             
           </div>
