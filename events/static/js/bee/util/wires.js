@@ -1,4 +1,6 @@
 
+import { createExperiment } from '../physics/experiment.js'
+
 class Wires {
     constructor() {
         // this.dataPromise = fetch('data/')
@@ -23,6 +25,8 @@ class Wires {
         this.store.summary = {}
         let len = this.store.wires.length
         this.store.summary.nWire = len
+        this.store.summary.facesPerAnode = this.anode(0).faces.length
+        this.store.summary.planesPerFace = this.face(0).planes.length
         this.store.summary.nChannel = 0
         for (let i=0; i<len; i++) {
             let w = this.wire(i)
@@ -35,7 +39,7 @@ class Wires {
                 this.store.channels[ch].push(i)
             }
         }
-        console.log(this.store)
+        // console.log(this.store)
 
     }
 
@@ -142,12 +146,15 @@ class Wires {
 
     xzView() {
         this.scene.rotation.x = 0;
-        this.camera.up.set(0, 1, 0);
+        this.camera.up.set(1, 0, 0);
         TweenLite.to(this.camera.position, 0.4, {
             x: this.controller.target.x,
             y: 2000,
             z: this.controller.target.z,
-            onUpdate: () => {  this.controller.update() }
+            onUpdate: () => {          
+                // this.controller.rotateLeftUser(-Math.PI/2);
+                this.controller.update() 
+            }
         });
 
     }
@@ -160,11 +167,12 @@ class Wires {
     }
 
     drawTPC() {
+        let url = window.location.href
+        let expName = url.substring(url.indexOf('wires')).split('/')[1]
+        let exp = createExperiment(expName)
+        // console.log(exp)
         this.tpc = new THREE.Group();
-        this.tpcLocation = [
-            // [-426, 365, -428, 428, -278, 577],
-            [-315, 313, -342, 342, -5, 304]
-        ];
+        this.tpcLocation = exp.tpc.location;
         let size = this.tpcLocation.length;
         let loc = this.tpcLocation;
 
@@ -209,7 +217,9 @@ class Wires {
         }
         else if (chList != undefined) {
             for (let ch of chList) {
-                ws.push(...this.store.channels[ch])
+                if (this.store.channels[ch]) {
+                    ws.push(...this.store.channels[ch])
+                }
             }
         }
         for (let i=0; i<ws.length; i++ ) {

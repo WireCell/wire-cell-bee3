@@ -28,7 +28,15 @@ Vue.createApp({
         let anode = parseInt(this.anode, 10);
         let face = parseInt(this.face, 10);
         let plane = parseInt(this.plane, 10);
-        return anode * 3 * (face+1) + plane
+        if (wires.store) {
+            face = anode * wires.store.summary.facesPerAnode + face
+            plane = face * wires.store.summary.planesPerFace + plane
+            return plane
+        }
+        else {
+            return -1
+        }
+
       },
 
     },
@@ -38,6 +46,7 @@ Vue.createApp({
         wires.drawWires({planeId: newVal})
         this.wireFirst = wires.plane(this.planeId).wires[0]
         this.wireLast = wires.plane(this.planeId).wires.slice(-1)[0]
+        // console.log('planeId triggered')
       },
       
       wireId(newVal) {
@@ -110,7 +119,8 @@ Vue.createApp({
         this.nWire = wires.store.summary.nWire
         this.nChannel = wires.store.summary.nChannel
 
-        wires.drawWires({planeId: 0})
+        // anode => planeId => draw wires (trigger)
+        // wires.drawWires({planeId: 0})
       })
     },
 }).mount('#vue')

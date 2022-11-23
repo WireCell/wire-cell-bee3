@@ -12,4 +12,5 @@ urlpatterns = [
     path('upload/', views.upload, name='upload'),
 
     path('wires/', views.wires, name='wires'),
+    path('wires/<exp>/', views.wires, name='wires'),
 ]
