@@ -246,7 +246,12 @@ class Wires {
     }
 
     drawImage3D(url) {
-        url = '/' + url.substring(url.indexOf('set'))
+        let baseurl = '/'
+        if(window.location.href.includes('/twister/')) {
+            baseurl = '/twister/bee/'
+        }
+
+        url = baseurl + url.substring(url.indexOf('set'))
         if (!url.endsWith('/')) { url += '/' }
         let eventSeg = url.substring(url.indexOf('event'))
         let segments = eventSeg.split('/')
@@ -284,7 +289,7 @@ class Wires {
                 this.data.cluster_id[i] = data.cluster_id == null ? 0 : data.cluster_id[i];
                 this.data.real_cluster_id[i] = data.real_cluster_id == null ? 0 : data.real_cluster_id[i];
             }
-            console.log(this.data)
+            // console.log(this.data)
 
             let positions = new Float32Array(size * 3);
             // let colors = new Float32Array(size * 3);
