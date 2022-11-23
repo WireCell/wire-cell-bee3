@@ -245,10 +245,77 @@ class Wires {
 
     }
 
+    drawImage3D(url) {
+        url = '/' + url.substring(url.indexOf('set'))
+        if (!url.endsWith('/')) { url += '/' }
+        let eventSeg = url.substring(url.indexOf('event'))
+        let segments = eventSeg.split('/')
+        if (segments.length == 3) { // no algorithm input
+            url = url + 'WireCell-charge/'
+        }
+        // console.log(url)
+        this.image3dPromise = fetch(url,   {
+            headers: {
+            'x-requested-with': 'XMLHttpRequest',
+            },
+        })
+        .then( res => res.json() )
+        .then( data => {
+            this.data = {};
+            let size = data.x.length; // all data must have x
+            this.data.x = new Float32Array(size);
+            this.data.y = new Float32Array(size);
+            this.data.z = new Float32Array(size);
+            this.data.q = new Float32Array(size);
+            this.data.cluster_id = new Float32Array(size);
+            this.data.real_cluster_id = new Float32Array(size);
+            this.data.runNo = data.runNo;
+            this.data.subRunNo = data.subRunNo;
+            this.data.eventNo = data.eventNo;
+            this.data.eventTime = data.eventTime == null ? '' : data.eventTime;
+            this.data.trigger = data.trigger == null ? '0' : data.trigger;
+            this.data.bounding_box = data.bounding_box == null ? [] : data.bounding_box;
+    
+            for (let i = 0; i < size; i++) {
+                this.data.x[i] = data.x[i];
+                this.data.y[i] = data.y[i];
+                this.data.z[i] = data.z[i];
+                this.data.q[i] = data.q == null ? 0 : data.q[i];
+                this.data.cluster_id[i] = data.cluster_id == null ? 0 : data.cluster_id[i];
+                this.data.real_cluster_id[i] = data.real_cluster_id == null ? 0 : data.real_cluster_id[i];
+            }
+            console.log(this.data)
+
+            let positions = new Float32Array(size * 3);
+            // let colors = new Float32Array(size * 3);
+            for (let i = 0; i < size; i++) {
+                positions[i*3] = this.data.x[i]
+                positions[i*3+1] = this.data.y[i]
+                positions[i*3+2] = this.data.z[i]
+            }
+            let geometry = new THREE.BufferGeometry();
+            geometry.dynamic = true;
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            // geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.attributes.position.needsUpdate = true;
+            // geometry.attributes.color.needsUpdate = true;
+    
+            let material = new THREE.PointsMaterial({
+                vertexColors: true,
+                size: 1,
+                opacity: 0.8,
+                transparent: true,
+                depthWrite: false,
+                sizeAttenuation: false
+            });
+    
+            if (this.pointCloud != null) { this.scene.remove(this.pointCloud) }
+            this.pointCloud = new THREE.Points(geometry, material);
+            this.scene.add(this.pointCloud);
+
+        })
+    }
 }
 
 export { Wires }
-
-
-// window.wires = new Wires();
 

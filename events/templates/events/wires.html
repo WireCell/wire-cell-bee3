@@ -17,18 +17,26 @@
               <div id="canvas" style="height:800px; border: 1px solid green;"></div>
           </div>
           <div class="col-4" id="vue"> 
-            <div class="btn-group" style="float: right">
-              <button type="button" class="btn btn-outline-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                {{ exp }}
-              </button>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'wires' 'protodunevd' %}">protodunevd</a></li>
-                <li><a class="dropdown-item" href="{% url 'wires' 'protodune' %}">protodune</a></li>
-                {% comment %} <li><hr class="dropdown-divider"></li> {% endcomment %}
-                <li><a class="dropdown-item" href="{% url 'wires' 'uboone' %}">uboone</a></li>
-                <li><a class="dropdown-item" href="{% url 'wires' 'icarus' %}">icarus</a></li>
-              </ul>
+            
+            <div class="input-group mt-3">
+              <div class="btn-group">
+                <button type="button" class="btn btn-outline-danger dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                  {{ exp }}
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'wires' 'protodunevd' %}">protodunevd</a></li>
+                  <li><a class="dropdown-item" href="{% url 'wires' 'protodune' %}">protodune</a></li>
+                  {% comment %} <li><hr class="dropdown-divider"></li> {% endcomment %}
+                  <li><a class="dropdown-item" href="{% url 'wires' 'uboone' %}">uboone</a></li>
+                  <li><a class="dropdown-item" href="{% url 'wires' 'icarus' %}">icarus</a></li>
+                </ul>
+              </div>
+              <input type="text" class="form-control" placeholder="data url" v-model="url_image3d">
+              <button class="btn btn-primary" type="button" @click="drawImage3D">Load 3D image</button>
             </div>
+
+
+
             <table class="table caption-top">
               <caption>Plane: [[ planeId ]] | Wire Range: [[wireFirst]] - [[wireLast]]</caption>
               <tbody>

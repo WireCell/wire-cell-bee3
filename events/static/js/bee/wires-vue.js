@@ -21,6 +21,7 @@ Vue.createApp({
         tailLoc: [0, 0, 0],
         wireList: '',
         chList:'',
+        url_image3d: '',
       }
     },
     computed: {
@@ -86,6 +87,9 @@ Vue.createApp({
         },
         drawChList() {
             wires.drawWires({chList: this.parseList(this.chList)})
+        },
+        drawImage3D() {
+            wires.drawImage3D(this.url_image3d)
         },
 
         parseList(txt) {
