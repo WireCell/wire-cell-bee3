@@ -39,7 +39,7 @@ class Wires {
                 this.store.channels[ch].push(i)
             }
         }
-        // console.log(this.store)
+        console.log(this.store)
 
     }
 
@@ -198,7 +198,7 @@ class Wires {
 
     }
 
-    drawWires({planeId, wireId, wireList, chList}) {
+    drawWires({planeId, wireId, wireList, chList, planeIdx, wipIdx}) {
         for (let i = 0; i < this.listOfLines.length; i++) {
             this.scene.remove(this.listOfLines[i]);
         }
@@ -211,6 +211,13 @@ class Wires {
         }
         else if (wireId != undefined) {
             ws = [wireId]
+        }
+        else if (planeIdx!=undefined && wipIdx!=undefined) {
+            try {
+                ws = [this.plane(planeIdx).wires[wipIdx]]
+            } catch (error) {
+                return
+            }
         }
         else if (wireList != undefined) {
             ws = wireList

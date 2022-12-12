@@ -22,6 +22,9 @@ Vue.createApp({
         wireList: '',
         chList:'',
         url_image3d: '',
+        planeIdx: 0,
+        wipIdx: 0,
+        wipGlobal: 0
       }
     },
     computed: {
@@ -42,6 +45,7 @@ Vue.createApp({
 
     },
     watch: {
+
       planeId(newVal) {
         // console.log(newVal)
         wires.drawWires({planeId: newVal})
@@ -60,6 +64,17 @@ Vue.createApp({
         this.drawWire()
       },
 
+      wipIdx(newVal) {
+        this.wipGlobal = wires.plane(this.planeIdx).wires[newVal]
+        let wire = wires.wire(this.wipGlobal)
+        this.wireChannel = wire.channel
+        let head = wires.point(wire.head)
+        this.headLoc = [Number(head.x.toFixed(2)), Number(head.y.toFixed(2)), Number(head.z.toFixed(2))]
+        let tail = wires.point(wire.tail)
+        this.tailLoc = [Number(tail.x.toFixed(2)), Number(tail.y.toFixed(2)), Number(tail.z.toFixed(2))]
+        this.drawWIP()
+      },
+
       chId(newVal) {
         this.chWires = wires.store.channels[newVal]
         this.drawChannel()
@@ -76,6 +91,9 @@ Vue.createApp({
     },
 
     methods: {
+        drawWIP() {
+          wires.drawWires({planeIdx: this.planeIdx, wipIdx: this.wipIdx})
+        },
         drawWire() {
             wires.drawWires({wireId: this.wireId})
         },
