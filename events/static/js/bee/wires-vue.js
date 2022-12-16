@@ -101,10 +101,12 @@ Vue.createApp({
             wires.drawWires({wireList: this.chWires})
         },
         drawWireList() {
-            wires.drawWires({wireList: this.parseList(this.wireList)})
+          let parsed = this.parseList(this.wireList)
+          wires.drawWires({wireList: parsed.numberList, colorList: parsed.colorList})
         },
         drawChList() {
-            wires.drawWires({chList: this.parseList(this.chList)})
+          let parsed = this.parseList(this.chList)
+          wires.drawWires({chList: parsed.numberList, colorList: parsed.colorList})
         },
         drawImage3D() {
             wires.drawImage3D(this.url_image3d)
@@ -112,26 +114,41 @@ Vue.createApp({
 
         parseList(txt) {
             let finalList = []
+            let colorList = []
             let commaList = txt.split(',')
             for (let x of commaList) {
               if (x.includes(':')) {
                 let colonList = x.split(':')
                 if (colonList.length==2) { colonList.push(1) }
-                if (colonList.length==3) {
+                if (colonList.length>=3) {
                   let start = parseInt(colonList[0], 10)
                   let end = parseInt(colonList[1], 10)
                   let step = parseInt(colonList[2], 10)
-                  for (let i=start; i<end; i+=step) {
-                    finalList.push(i)
+                  if (colonList.length==3) {
+                    for (let i=start; i<end; i+=step) {
+                      finalList.push(i)
+                      colorList.push('red')
+                    }
                   }
+                  else {
+                    for (let i=start; i<end; i+=step) {
+                      finalList.push(i)
+                      colorList.push(colonList[3])
+                    }
+                  }
+
                 }
               }
               else {
                 finalList.push(parseInt(x, 10))
+                colorList.push('red')
               }
             }
-            // console.log(finalList)
-            return finalList
+            // console.log(finalList, colorList)
+            return {
+              'numberList': finalList,
+              'colorList': colorList
+            }
         }
     },
 

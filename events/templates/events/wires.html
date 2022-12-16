@@ -78,12 +78,72 @@
 
             <div class="accordion">
               <div class="accordion-item">
+                <h2 class="accordion-header" id="panelsStayOpen-headingTwo">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="true" aria-controls="panelsStayOpen-collapseTwo">
+                    Global Wire Index
+                  </button>
+                </h2>
+                <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingTwo">
+                  <div class="accordion-body">
+                    <div class="input-group mt-3">
+                      <button class="btn btn-primary" type="button" @click="drawWire">Draw</button>
+                      <span class="input-group-text">wire index (0 - [[ nWire-1 ]])</span>
+                      <input type="number" class="form-control" v-model.number="wireId">
+                    </div>
+                    <div class="card">
+                      <div class="card-body">
+                        <p class="card-text" >Channel: [[ wireChannel ]] <br /> Head (mm): [[ headLoc ]] <br/> Tail (mm): [[ tailLoc ]]</p>
+                      </div>
+                    </div>
+        
+                    <div class="input-group mt-3">
+                      <button class="btn btn-primary" type="button" @click="drawWireList">Draw</button>
+                      <span class="input-group-text">wire list</span>
+                      <input type="text" class="form-control" v-model.lazy="wireList">
+                    </div>
+                    <div class="card">
+                      <div class="card-body">
+                        <p class="card-text">Separate wires by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step:color)</p>
+                        <p>You can specify a wire color using any <a href="https://www.w3schools.com/cssref/css_colors.php">css color name or hex string</a> in the 4th argument when you use the range syntax.</p>
+                        <p class="card-text">Example: 2, 5:8, 10:100:10, 200:300:10:green</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="panelsStayOpen-headingThree">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
+                    Channel ID
+                  </button>
+                </h2>
+                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingThree">
+                  <div class="accordion-body">
+                    <div class="input-group">
+                      <button class="btn btn-primary" type="button" @click="drawChannel">Draw</button>
+                      <span class="input-group-text">channel (0 - [[ nChannel-1 ]])</span>
+                      <input type="number" class="form-control" v-model.number="chId">
+                    </div>
+                    <div class="card">
+                      <div class="card-body">
+                        <p class="card-text" >Wires: [[ chWires ]] </p>
+                      </div>
+                    </div>
+                    <div class="input-group mt-3">
+                      <button class="btn btn-primary" type="button" @click="drawChList">Draw</button>
+                      <span class="input-group-text">channel list</span>
+                      <input type="text" class="form-control" v-model.lazy="chList">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
                 <h2 class="accordion-header" id="panelsStayOpen-headingOne">
-                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="false" aria-controls="panelsStayOpen-collapseOne">
                     Wire Index in Plane
                   </button>
                 </h2>
-                <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+                <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingOne">
                   <div class="accordion-body">
                     <div class="input-group mt-3">
                       <button class="btn btn-primary" type="button" @click="drawWIP">Draw</button>
@@ -99,68 +159,6 @@
                           Channel: [[ wireChannel ]] <br /> 
                           Head (mm): [[ headLoc ]] <br/> 
                           Tail (mm): [[ tailLoc ]]</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header" id="panelsStayOpen-headingTwo">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                    Global Wire Index
-                  </button>
-                </h2>
-                <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingTwo">
-                  <div class="accordion-body">
-                    <div class="input-group mt-3">
-                      <button class="btn btn-primary" type="button" @click="drawWire">Draw</button>
-                      <span class="input-group-text">wire index (0 - [[ nWire-1 ]])</span>
-                      <input type="number" class="form-control" v-model.number="wireId">
-                    </div>
-                    <div class="card">
-                      <div class="card-body">
-                        <p class="card-text" >Channel: [[ wireChannel ]] <br /> Head (mm): [[ headLoc ]] <br/> Tail (mm): [[ tailLoc ]]</p>
-                      </div>
-                    </div>
-        
-                    <div class="input-group mt-3">
-                      <button class="btn btn-primary" type="button" @click="drawWireList">Draw from wire list</button>
-                      <input type="text" class="form-control" v-model.lazy="wireList">
-                    </div>
-                    <div class="card">
-                      <div class="card-body">
-                        <p class="card-text">Separate wires by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step)</p>
-                        <p class="card-text">Example: 2, 3, 5:8, 10:100:10</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header" id="panelsStayOpen-headingThree">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
-                    Channel ID
-                  </button>
-                </h2>
-                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingThree">
-                  <div class="accordion-body">
-                    <div class="input-group">
-                      <button class="btn btn-primary" type="button" @click="drawChannel">Draw channel (0 - [[ nChannel-1 ]])</button>
-                      <input type="number" class="form-control" v-model.number="chId">
-                    </div>
-                    <div class="card">
-                      <div class="card-body">
-                        <p class="card-text" >Wires: [[ chWires ]] </p>
-                      </div>
-                    </div>
-                    <div class="input-group mt-3">
-                      <button class="btn btn-primary" type="button" @click="drawChList">Draw from channel list</button>
-                      <input type="text" class="form-control" v-model.lazy="chList">
-                    </div>
-                    <div class="card">
-                      <div class="card-body">
-                        <p class="card-text">Separate channels by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step)</p>
-                        <p class="card-text">Example: 2, 3, 5:8, 10:100:10</p>
                       </div>
                     </div>
                   </div>

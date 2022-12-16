@@ -198,14 +198,13 @@ class Wires {
 
     }
 
-    drawWires({planeId, wireId, wireList, chList, planeIdx, wipIdx}) {
+    drawWires({planeId, wireId, wireList, chList, colorList, planeIdx, wipIdx}) {
         for (let i = 0; i < this.listOfLines.length; i++) {
             this.scene.remove(this.listOfLines[i]);
         }
         this.listOfLines = [];
-        let material = new THREE.LineBasicMaterial({color: 'red'});
-
         let ws = []
+        // let colors = colorList == undefined? [] : colorList
         if (planeId != undefined) {
             ws = this.plane(planeId).wires
         }
@@ -223,11 +222,21 @@ class Wires {
             ws = wireList
         }
         else if (chList != undefined) {
-            for (let ch of chList) {
-                if (this.store.channels[ch]) {
-                    ws.push(...this.store.channels[ch])
+            let size = chList.length
+            let colors = []
+            for (let i=0; i<size; i++) {
+                let ch = chList[i]
+                let color = colorList[i] ? colorList[i] : 'red'
+                let segs = this.store.channels[ch]
+                if (segs) {
+                    let nSeg = segs.length
+                    for (let j=0; j<nSeg; j++) {
+                        ws.push(segs[j])
+                        colors.push(color)
+                    }
                 }
             }
+            colorList = colors
         }
         for (let i=0; i<ws.length; i++ ) {
             let w
@@ -245,6 +254,14 @@ class Wires {
             );
     
             let geometry = new THREE.BufferGeometry().setFromPoints( points );
+            let color
+            try {
+                color = colorList[i]
+            }
+            catch (error) {
+                color = 'red'
+            }
+            let material = new THREE.LineBasicMaterial({color: color});
             let line = new THREE.Line(geometry, material);
             this.listOfLines.push(line);
             this.scene.add(line);
