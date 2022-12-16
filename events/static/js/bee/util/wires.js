@@ -22,6 +22,7 @@ class Wires {
     initStore(data) {
         this.store = data.Store
         this.store.channels = {}
+        this.store.wipMap = {}
         this.store.summary = {}
         let len = this.store.wires.length
         this.store.summary.nWire = len
@@ -37,6 +38,13 @@ class Wires {
             }
             else {
                 this.store.channels[ch].push(i)
+            }
+        }
+        for (let i=0; i<this.store.planes.length; i++) {
+            let plane = this.plane(i)
+            for (let j=0; j<plane.wires.length; j++) {
+                let wireGlobal = plane.wires[j]
+                this.store.wipMap[wireGlobal] = [i, j]
             }
         }
         console.log(this.store)
@@ -198,7 +206,7 @@ class Wires {
 
     }
 
-    drawWires({planeId, wireId, wireList, chList, colorList, planeIdx, wipIdx}) {
+    drawWires({planeId, wireId, wireList, chList, colorList, planeIdx, wipIdx, drawCenter, drawBoundary}) {
         for (let i = 0; i < this.listOfLines.length; i++) {
             this.scene.remove(this.listOfLines[i]);
         }
@@ -238,19 +246,21 @@ class Wires {
             }
             colorList = colors
         }
-        for (let i=0; i<ws.length; i++ ) {
+
+        let self = this;
+        function createWire(i) {
             let w
             try {
-                w = this.wire(ws[i])
+                w = self.wire(ws[i])
             } catch (error) {
-                continue
+                return
             }
-            // console.log(w, this.point(w.head), this.point(w.tail))
+            // console.log(w, self.point(w.head), self.point(w.tail))
     
             let points = [];
             points.push(
-                new THREE.Vector3(...this.xyz(this.point(w.head))),
-                new THREE.Vector3(...this.xyz(this.point(w.tail)))
+                new THREE.Vector3(...self.xyz(self.point(w.head))),
+                new THREE.Vector3(...self.xyz(self.point(w.tail)))
             );
     
             let geometry = new THREE.BufferGeometry().setFromPoints( points );
@@ -263,9 +273,71 @@ class Wires {
             }
             let material = new THREE.LineBasicMaterial({color: color});
             let line = new THREE.Line(geometry, material);
-            this.listOfLines.push(line);
-            this.scene.add(line);
+            self.listOfLines.push(line);
+            self.scene.add(line);
         }
+
+        function createWireBoundary(i) {
+            let w1, w2
+            try {
+                let [planeIdx, wipIdx] = self.store.wipMap[ws[i]]
+                w1 = self.wire(self.plane(planeIdx).wires[wipIdx])
+                w2 = self.wire(self.plane(planeIdx).wires[wipIdx-1])
+            } catch (error) {
+                return
+            }
+            // console.log(w, self.point(w.head), self.point(w.tail))
+    
+            let points = []
+            function avgXYZ(arr1, arr2) {
+                let arr = []
+                // console.log(arr1, arr2)
+                for (let i in [0, 1, 2]) {
+                    arr.push((arr1[i]+arr2[i])/2)
+                }
+                return arr
+            }
+            
+            points.push(
+                new THREE.Vector3(...avgXYZ(self.xyz(self.point(w1.head)), self.xyz(self.point(w2.head)) )),
+                new THREE.Vector3(...avgXYZ(self.xyz(self.point(w1.tail)), self.xyz(self.point(w2.tail)) ))
+            );
+    
+            let geometry = new THREE.BufferGeometry().setFromPoints( points );
+            let color
+            try {
+                color = colorList[i]
+            }
+            catch (error) {
+                color = 'red'
+            }
+            let material = new THREE.LineBasicMaterial({color: 'grey'});
+            // let material = new THREE.LineDashedMaterial( {
+            //     color: color,
+            //     linewidth: 1,
+            //     scale: 1,
+            //     dashSize: 3,
+            //     gapSize: 1,
+            // } );
+            let line = new THREE.Line(geometry, material);
+            line.computeLineDistances();
+            self.listOfLines.push(line);
+            self.scene.add(line);
+        }
+
+        drawCenter = (drawCenter==undefined ? true : drawCenter)
+        drawBoundary = (drawBoundary==undefined ? false: drawBoundary)
+        if (drawCenter) {
+            for (let i=0; i<ws.length; i++ ) {
+                createWire(i)
+            }
+        }
+        if (drawBoundary) {
+            for (let i=0; i<ws.length; i++ ) {
+                createWireBoundary(i)
+            }
+        }
+
 
     }
 

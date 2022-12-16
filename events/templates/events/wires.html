@@ -101,10 +101,20 @@
                       <span class="input-group-text">wire list</span>
                       <input type="text" class="form-control" v-model.lazy="wireList">
                     </div>
+
                     <div class="card">
                       <div class="card-body">
-                        <p class="card-text">Separate wires by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step:color)</p>
-                        <p>You can specify a wire color using any <a href="https://www.w3schools.com/cssref/css_colors.php">css color name or hex string</a> in the 4th argument when you use the range syntax.</p>
+                        <div class="form-check form-check-inline mt-0">
+                          <input class="form-check-input" type="checkbox" id="drawCenterCheckBox" value="drawCenter" v-model="drawCenter">
+                          <label class="form-check-label" for="drawCenterCheckBox">wire center</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                          <input class="form-check-input" type="checkbox" id="drawBoundaryCheckBox" value="drawBoundary" v-model="drawBoundary">
+                          <label class="form-check-label" for="drawBoundaryCheckBox">wire boundary</label>
+                        </div>
+                        <hr />
+                        <p class="card-text">Separate wires by comma (,). This can be combined with the range syntax similar to python array slicing (start:stop:step)</p>
+                        <p>You can specify a wire color using any <a href="https://www.w3schools.com/cssref/css_colors.php">css color name or hex string</a> in the 4th argument when you use the range syntax (start:stop:step:color).</p>
                         <p class="card-text">Example: 2, 5:8, 10:100:10, 200:300:10:green</p>
                       </div>
                     </div>

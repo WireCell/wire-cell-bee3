@@ -6,6 +6,8 @@ Vue.createApp({
     delimiters: ["[[", "]]"],
     data() {
       return { 
+        drawCenter: true,
+        drawBoundary: false,
         anode: undefined,
         face: 0,
         plane: 0,
@@ -102,7 +104,12 @@ Vue.createApp({
         },
         drawWireList() {
           let parsed = this.parseList(this.wireList)
-          wires.drawWires({wireList: parsed.numberList, colorList: parsed.colorList})
+          wires.drawWires({
+            wireList: parsed.numberList, 
+            colorList: parsed.colorList, 
+            drawBoundary: this.drawBoundary,
+            drawCenter: this.drawCenter
+          })
         },
         drawChList() {
           let parsed = this.parseList(this.chList)
