@@ -77,6 +77,9 @@ class Wires {
         camera.zoom = 1500. / depth;
         camera.updateProjectionMatrix();
 
+        // const axesHelper = new THREE.AxesHelper( 10 );
+        // this.scene.add( axesHelper );
+
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         let renderer = this.renderer;
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -94,6 +97,9 @@ class Wires {
         this.target0 = Object.assign({}, this.controller.target)
         this.position0 = Object.assign({}, this.controller.object.position)
         this.zoom0 = this.controller.object.zoom;
+        // this.controller.addEventListener('change', () => {
+        //     console.log(this.controller.object.zoom)
+        // })
 
         let self = this;
         window.animate = () => {
@@ -135,12 +141,12 @@ class Wires {
         this.gui.add(self, 'resetCamera').name('Reset');
 
 
-        let para = { zoomFactor: self.zoom0 }
-        this.gui.add(para, 'zoomFactor', 0.5, 15)
-            .name("Zoom").step(0.5)
-            .onChange((value) => {
-                self.zoom(value)
-            });
+        // let para = { zoomFactor: self.zoom0 }
+        // this.gui.add(para, 'zoomFactor', 0.5, 15)
+        //     .name("Zoom").step(0.5)
+        //     .onChange((value) => {
+        //         self.zoom(value)
+        //     });
 
     }
     

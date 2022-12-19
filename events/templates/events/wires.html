@@ -10,14 +10,14 @@
   </head>
 
   <body>
-    <div class="container-fluid">
+    <div class="container-fluid" id="vue">
       <div id="gui" style="position: absolute; top: 5px; left: 12px"></div>
       <div class='row no-gutters mt-1'>
           <div class='col-8'>
               <div id="canvas" style="height:800px; border: 1px solid green;"></div>
+              <input type="range" class="form-range" min="0.5" max="25" step ="0.25" v-model="zoomLevel" value="1" id="customRange1">
           </div>
-          <div class="col-4" id="vue"> 
-            
+          <div class="col-4"> 
             <div class="input-group mt-3">
               <div class="btn-group">
                 <button type="button" class="btn btn-outline-danger dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">

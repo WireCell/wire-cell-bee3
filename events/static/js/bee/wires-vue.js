@@ -27,7 +27,8 @@ Vue.createApp({
         url_image3d: '',
         planeIdx: 0,
         wipIdx: 0,
-        wipGlobal: 0
+        wipGlobal: 0,
+        zoomLevel: 1
       }
     },
     computed: {
@@ -89,6 +90,14 @@ Vue.createApp({
 
       chList() {
         this.drawChList();
+      },
+
+      zoomLevel() {
+        if (this.zoomLevel != wires.controller.object.zoom) {
+          // console.log('changed')
+          wires.zoom(this.zoomLevel)
+
+        }
       }
 
     },
@@ -165,6 +174,10 @@ Vue.createApp({
         this.anode = 0
         this.nWire = wires.store.summary.nWire
         this.nChannel = wires.store.summary.nChannel
+        this.zoomLevel = wires.controller.object.zoom
+        wires.controller.addEventListener('change', () => {
+          this.zoomLevel = wires.controller.object.zoom
+        })
 
         // anode => planeId => draw wires (trigger)
         // wires.drawWires({planeId: 0})
