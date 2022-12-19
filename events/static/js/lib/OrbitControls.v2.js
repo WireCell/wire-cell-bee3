@@ -454,6 +454,10 @@
 			// event callbacks - update the object state
 			//
 
+			//added by Chao to expose the function.
+			this.dollyInUser = dollyIn;
+			this.dollyOutUser = dollyOut;
+
 
 			function handleMouseDownRotate( event ) {
 

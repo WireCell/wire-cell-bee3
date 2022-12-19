@@ -47,7 +47,7 @@ class Wires {
                 this.store.wipMap[wireGlobal] = [i, j]
             }
         }
-        console.log(this.store)
+        // console.log(this.store)
 
     }
 
@@ -91,6 +91,9 @@ class Wires {
         this.canvas.appendChild(renderer.domElement);
 
         this.controller = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        this.target0 = Object.assign({}, this.controller.target)
+        this.position0 = Object.assign({}, this.controller.object.position)
+        this.zoom0 = this.controller.object.zoom;
 
         let self = this;
         window.animate = () => {
@@ -118,7 +121,7 @@ class Wires {
     }
 
     initGUI() {
-        this.gui = new dat.GUI({ autoPlace: false, width: 120 });
+        this.gui = new dat.GUI({ autoPlace: false, width: 200 });
         this.gui.domElement.id = 'gui'
         document.getElementById('gui').append(this.gui.domElement);
 
@@ -126,7 +129,18 @@ class Wires {
         this.gui.add(self, 'yzView').name('YZ view');
         this.gui.add(self, 'xyView').name('XY view');
         this.gui.add(self, 'xzView').name('XZ view');
+
+        this.gui.add(self.controller, 'saveState').name('Save state');
+        this.gui.add(self.controller, 'reset').name('Load state');
         this.gui.add(self, 'resetCamera').name('Reset');
+
+
+        let para = { zoomFactor: self.zoom0 }
+        this.gui.add(para, 'zoomFactor', 0.5, 15)
+            .name("Zoom").step(0.5)
+            .onChange((value) => {
+                self.zoom(value)
+            });
 
     }
     
@@ -139,6 +153,8 @@ class Wires {
             z: this.controller.target.z,
             onUpdate: () => { this.controller.update() }
         });
+        // console.log(this.controller.target0, this.controller.position0, this.controller.zoom0)
+
     }
 
     xyView() {
@@ -170,8 +186,29 @@ class Wires {
     resetCamera() {
         this.scene.rotation.x = 0;
         this.camera.up.set(0, 1, 0);
-        this.controller.reset();
-        this.controller.target.set(0, 0, 0);
+
+        // this.controller.target.set(0, 0, 0);
+
+        // this.controller.target0.copy( this.target0 );
+        // this.controller.position0.copy( this.position0 );
+        // this.controller.zoom0 = this.zoom0;
+        // this.controller.reset();
+
+        // console.log(this.target0, this.position0, this.zoom0)
+        // from the original reset() method in obitcontrols.js
+        this.controller.target.copy( this.target0 );
+        this.controller.object.position.copy( this.position0 );
+        this.controller.object.zoom = this.zoom0;
+        this.controller.object.updateProjectionMatrix();
+        // this.controller.dispatchEvent( this.controller._changeEvent );
+        this.controller.update();
+        // this.controller.state = STATE.NONE;
+    }
+
+    zoom(zoomFactor) {
+        this.controller.object.zoom = zoomFactor;
+        this.controller.object.updateProjectionMatrix();
+        this.controller.update();
     }
 
     drawTPC() {

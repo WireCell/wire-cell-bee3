@@ -1,6 +1,7 @@
 import { Wires } from './util/wires.js'
 
 let wires = new Wires();
+// console.log(wires)
 
 Vue.createApp({
     delimiters: ["[[", "]]"],
