@@ -326,6 +326,8 @@
 			}
 			//added by Chao to expose the function.
 			this.rotateLeftUser = rotateLeft;
+			this.rotateLeft = rotateLeft;
+
 
 			function rotateUp( angle ) {
 
@@ -334,6 +336,8 @@
 			}
 			//added by Chao to expose the function.
 			this.rotateUpUser = rotateUp;
+			this.rotateUp = rotateUp;
+
 
 			const panLeft = function () {
 

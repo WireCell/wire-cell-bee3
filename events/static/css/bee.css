@@ -21,3 +21,23 @@ a.NA {color: #999; }
     line-height: 1.2em;
 }
 
+.obit-controls-gizmo {
+  position: absolute;
+  left: 15px;
+  top: 680px;
+  z-index: 1000;
+  background-color: rgba(172, 169, 169, 0.1);
+  border-radius: 100%;
+  transition: background-color .15s  linear;
+  cursor: pointer;
+}
+
+.obit-controls-gizmo.dragging, 
+.obit-controls-gizmo:hover {
+    background-color: rgba(172, 169, 169, 0.2);
+}
+
+.obit-controls-gizmo.inactive {
+    pointer-events: none;
+    background-color: rgba(172, 169, 169, 0.2)  !important;
+}

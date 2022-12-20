@@ -63,6 +63,7 @@ class Wires {
         this.canvas = document.getElementById('canvas')
         this.scene = new THREE.Scene();
 
+
         let depth = 2000;
         // let width = 800;
         // let height = 800;
@@ -79,6 +80,10 @@ class Wires {
 
         // const axesHelper = new THREE.AxesHelper( 10 );
         // this.scene.add( axesHelper );
+
+        // this.viewHelper = new ViewHelper(camera, document.getElementById('canvas'))
+        // this.scene.add(this.viewHelper)
+
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         let renderer = this.renderer;
@@ -101,6 +106,23 @@ class Wires {
         //     console.log(this.controller.object.zoom)
         // })
 
+        const controlsGizmo = new OrbitControlsGizmo(this.controller,{
+			size: 120,
+			padding: 8,
+			bubbleSizePrimary: 10,
+			bubbleSizeSecondary: 7,
+			lineWidth: 1.5,
+			fontSize: "12px",
+			fontFamily: "monospace",
+			fontWeight: "bold",
+			fontColor: "#222",
+			colors: {
+				x: ["#ff3653", "#ff3653"],
+				y: ["#8adb00", "#8adb00"],
+				z: ["#2c8fff", "#2c8fff"],
+			}})
+        document.getElementById('canvas').appendChild(controlsGizmo.domElement)
+
         let self = this;
         window.animate = () => {
 
@@ -121,6 +143,8 @@ class Wires {
             renderer.clear();
             renderer.render(self.scene, self.camera);
 
+            // this.viewHelper.render(renderer)
+
         }
         window.animate();
 
@@ -133,8 +157,8 @@ class Wires {
 
         let self = this;
         this.gui.add(self, 'yzView').name('YZ view');
-        this.gui.add(self, 'xyView').name('XY view');
-        this.gui.add(self, 'xzView').name('XZ view');
+        // this.gui.add(self, 'xyView').name('XY view');
+        // this.gui.add(self, 'xzView').name('XZ view');
 
         this.gui.add(self.controller, 'saveState').name('Save state');
         this.gui.add(self.controller, 'reset').name('Load state');
