@@ -4,7 +4,9 @@ from django.core import serializers
 # Create your views here.
 from .models import EventSet
 from django.conf import settings
-import os, json
+import os, json, bz2
+from pathlib import Path
+
 
 
 def eventsets(request):
@@ -200,37 +202,105 @@ def upload(request):
     import uuid, subprocess
     if request.method == 'POST':
         new_file = request.FILES['file']
-        # print new_file.name, new_file.size, new_file.content_type
-        unique_name = str(uuid.uuid4())
-        new_filename = os.path.join(settings.MEDIA_ROOT, unique_name+'.zip')
-        # print new_filename
-        with open(new_filename, 'wb+') as destination:
-            for chunk in new_file.chunks():
-                destination.write(chunk)
+        # print (new_file.name, new_file.size, new_file.content_type)
+        if (new_file.name.endswith('.zip')):
+            # Bee 3d imaging file
+            unique_name = str(uuid.uuid4())
+            new_filename = os.path.join(settings.MEDIA_ROOT, unique_name+'.zip')
+            # print new_filename
+            with open(new_filename, 'wb+') as destination:
+                for chunk in new_file.chunks():
+                    destination.write(chunk)
 
-        cmd = 'unzip -l ' + new_filename + ' | head -n 5 | tail -n 2 | awk \'{print $4}\''
-        # print cmd
-        try:
-            output = subprocess.check_output(cmd, shell=True).decode()
-            if (output.startswith('data/\ndata/')):
-                print('Good Format!')
-            else:
-                print('Bad Format!', output)
+            cmd = 'unzip -l ' + new_filename + ' | head -n 5 | tail -n 2 | awk \'{print $4}\''
+            # print cmd
+            try:
+                output = subprocess.check_output(cmd, shell=True).decode()
+                if (output.startswith('data/\ndata/')):
+                    print('Good Format!')
+                else:
+                    print('Bad Format!', output)
+                    return HttpResponse('DataNotValid')
+            except subprocess.CalledProcessError:
                 return HttpResponse('DataNotValid')
-        except subprocess.CalledProcessError:
-            return HttpResponse('DataNotValid')
 
-        extract_dir = os.path.join(settings.MEDIA_ROOT, unique_name)
-        cmd = 'unzip %s -d %s && chmod -R g+w %s' % (
-            new_filename, extract_dir, extract_dir)
-        subprocess.call(cmd, shell=True)
-        return HttpResponse(unique_name)
+            extract_dir = os.path.join(settings.MEDIA_ROOT, unique_name)
+            cmd = 'unzip %s -d %s && chmod -R g+w %s' % (
+                new_filename, extract_dir, extract_dir)
+            subprocess.call(cmd, shell=True)
+            return HttpResponse(unique_name)
+        elif (new_file.name.endswith('.bz2')):
+            # wire geometry file
+            new_filename = Path(settings.MEDIA_ROOT) / 'WireGeometry/archive' / new_file.name
+            # print(new_filename)
+            if (new_filename.exists()):
+                old_suffix = ''.join(new_filename.suffixes)
+                new_suffix = '__' + uuid.uuid4().hex[:4] + old_suffix
+                new_filename = Path(str(new_filename).replace(old_suffix, new_suffix))
+            with open(new_filename, 'wb+') as destination:
+                for chunk in new_file.chunks():
+                    destination.write(chunk)
+            # validating wire file content
+            # data = bz2.open(new_filename, 'r').read()  
+            # data = json.loads(data)
+            # store = data['Store']['anodes']
+            # print(store)            
+            try:
+                data = bz2.open(new_filename, 'r').read()  
+                data = json.loads(data)
+                store = data['Store']['anodes']
+                print(store)
+            except:
+                new_filename.unlink()
+                return HttpResponse('File content is not wire-cell wire geometry. Deleted File.')
+            return HttpResponse(new_file.name)
     else:
         return HttpResponse('No Get, Please POST')
 
-def wires(request, exp='uboone'):
-    filename = settings.MEDIA_ROOT / 'WireGeometry' / f'{exp}.json'
-    data = open(filename).read()
+def wires(request, exp='uboone', file=None):
+    detMap = {
+        'protodune': 'protodune',
+        'protodunehd': 'protodune',
+        'protodunevd': 'protodunevd',
+        'uboone': 'uboone',
+        'microboone': 'uboone',
+        'icarus': 'icarus',
+    }
+    if (exp == 'archive' and file == None):
+        files = []
+        import datetime
+        for p in (settings.MEDIA_ROOT / 'WireGeometry/archive').iterdir():
+            if p.is_file():
+                # print(p.name)
+                filename = p.name
+                if (not filename.endswith('.json.bz2')): continue
+                try:
+                    detector = filename.split('-')[0]
+                    detector = detMap.get(detector, 'unknown')
+                except:
+                    detector = 'unknown'
+                mtime = p.stat().st_mtime
+                files.append({
+                    'name': p.name,
+                    'detector': detector,
+                    'mtime': datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d'),
+                    'size': round(p.stat().st_size/1024)
+                })
+        return render(request, 'events/wires_archive.html', {
+            'files': sorted(files, key=lambda f: f['name']),
+        }) 
+    else:
+        exp = detMap.get(exp, 'uboone')
+        # if (exp == 'unknown'):
+        #     return HttpResponse('Unknown detector.')
+        if (file != None):
+            filename = settings.MEDIA_ROOT / 'WireGeometry/archive' / file
+            data = bz2.open(filename, 'r').read()
+        else:
+            filename = settings.MEDIA_ROOT / 'WireGeometry' / f'{exp}.json'
+            data = open(filename).read()
+    
+
     # print(request.headers)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return HttpResponse(data)

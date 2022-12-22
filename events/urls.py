@@ -13,4 +13,5 @@ urlpatterns = [
 
     path('wires/', views.wires, name='wires'),
     path('wires/<exp>/', views.wires, name='wires'),
+    path('wires/<exp>/<file>/', views.wires, name='wires'),
 ]
