@@ -265,6 +265,7 @@ def wires(request, exp='uboone', file=None):
         'uboone': 'uboone',
         'microboone': 'uboone',
         'icarus': 'icarus',
+        'sbnd': 'sbnd',
     }
     if (exp == 'archive' and file == None):
         files = []

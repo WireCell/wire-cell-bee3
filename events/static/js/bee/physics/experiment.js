@@ -732,6 +732,20 @@ class ProtoDUNEVD extends Experiment {
     }
 
 }
+
+// --------------------------------------------------------
+class SBND extends Experiment {
+
+    constructor() {
+        super('sbnd');
+        this.updateTPCLocation([
+            [-201.75, -0.45, -203.732, 203.732, 0, 509.4],
+            [0.45, 201.75, -203.732, 203.732, 0, 509.4]
+        ]);
+    }
+
+}
+
 // --------------------------------------------------------
 
 function createExperiment(name) {
@@ -743,6 +757,7 @@ function createExperiment(name) {
     else if (name == 'dune35t') { exp = new DUNE35t(); }
     else if (name == 'protodunevd-test') { exp = new ProtoDUNEVDTest(); }
     else if (name == 'protodunevd') { exp = new ProtoDUNEVD(); }
+    else if (name == 'sbnd') { exp = new SBND(); }
     else { exp = new MicroBooNE(); } // default
     return exp;
 }
