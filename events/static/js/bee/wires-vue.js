@@ -22,6 +22,8 @@ Vue.createApp({
         wireChannel: 0,
         headLoc: [0, 0, 0],
         tailLoc: [0, 0, 0],
+        lineHeadText: '',
+        lineTailText: '',
         wireList: '',
         chList:'',
         url_image3d: '',
@@ -103,6 +105,18 @@ Vue.createApp({
     },
 
     methods: {
+        drawLine() {
+          function parseXYZ(txt) {
+            let xyz = txt.split(',')
+            for(let i=0; i<3; i++) {
+              // mm is the unit in wire-cell but cm is the unit when draw objects in Bee.
+              xyz[i] = parseFloat(xyz[i], 10)/10; 
+            }
+            return xyz
+          }
+          // console.log(parseXYZ(this.lineHeadText), parseXYZ(this.lineHeadText),)
+          wires.drawLine(parseXYZ(this.lineHeadText), parseXYZ(this.lineTailText))
+        },
         drawWIP() {
           wires.drawWires({planeIdx: this.planeIdx, wipIdx: this.wipIdx})
         },
@@ -128,7 +142,6 @@ Vue.createApp({
         drawImage3D() {
             wires.drawImage3D(this.url_image3d)
         },
-
         parseList(txt) {
             let finalList = []
             let colorList = []

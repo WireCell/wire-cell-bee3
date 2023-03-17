@@ -273,6 +273,26 @@ class Wires {
 
     }
 
+    drawLine(head, tail) {
+        for (let i = 0; i < this.listOfLines.length; i++) {
+            this.scene.remove(this.listOfLines[i]);
+        }
+        this.listOfLines = [];
+        let points = [];
+        // console.log(head, tail)
+        points.push(
+            new THREE.Vector3(...head),
+            new THREE.Vector3(...tail)
+        );
+        // console.log(points)
+
+        let geometry = new THREE.BufferGeometry().setFromPoints( points );
+        let material = new THREE.LineBasicMaterial({color: 'red'});
+        let line = new THREE.Line(geometry, material);
+        this.listOfLines.push(line);
+        this.scene.add(line);
+    }
+
     drawWires({planeId, wireId, wireList, chList, colorList, planeIdx, wipIdx, drawCenter, drawBoundary}) {
         for (let i = 0; i < this.listOfLines.length; i++) {
             this.scene.remove(this.listOfLines[i]);
