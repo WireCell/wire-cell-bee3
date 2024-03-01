@@ -165,7 +165,7 @@ class Helper {
             }
             this.show(this.store.config.helper.showPD, this.pd);
         }
-        else if (exp.name == 'icarus') {
+        else if (exp.name == 'icarus' || exp.name == 'sbnd') {
             let location = this.store.experiment.op.location;
             let nDet = this.store.experiment.op.nDet;
             if (null == this.pd) { // init if not exist
