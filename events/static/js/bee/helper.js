@@ -171,18 +171,36 @@ class Helper {
             if (null == this.pd) { // init if not exist
                 this.pd = new THREE.Group();
                 Object.keys(location).forEach(i => {
-                    let radius = 10;
-                    let segments = 32; //<-- Increase or decrease for more resolution I guess
-        
-                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
-                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
-                        color: 0xbbbbbb,
-                        opacity: 0.01,
-                        side: THREE.DoubleSide
-                    }));
-                    circle.rotation.y = Math.PI / 2;
-                    circle.position.set(...exp.toLocalXYZ(location[i][0], location[i][1], location[i][2]));
-                    this.pd.add(circle);
+                    let detType = location[i][3] == undefined ? 1 : location[i][3];
+                    // console.log(detType)
+                    if (detType == 1) {
+                        let radius = 10.16;
+                        let segments = 32; //<-- Increase or decrease for more resolution I guess
+            
+                        let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                        // let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
+                        //     color: 0xbbbbbb,
+                        //     opacity: 0.01,
+                        //     side: THREE.DoubleSide
+                        // }));
+                        let circle = new THREE.LineSegments(
+                            new THREE.EdgesGeometry(circleGeometry), 
+                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
+                        );
+                        circle.rotation.y = Math.PI / 2;
+                        circle.position.set(...exp.toLocalXYZ(location[i][0], location[i][1], location[i][2]));
+                        this.pd.add(circle);
+                    }
+                    else if (detType == 2) {
+                        let xara = new THREE.LineSegments(
+                            new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)), 
+                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
+                        );
+                        xara.rotation.y = Math.PI / 2;
+                        xara.position.set(...exp.toLocalXYZ(location[i][0], location[i][1], location[i][2]));
+                        this.pd.add(xara);
+                    }
+
                 });
             }
             this.show(this.store.config.helper.showPD, this.pd);
