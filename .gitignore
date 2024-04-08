@@ -16,6 +16,7 @@ Thumbs.db
 bee.old.js
 .vscode/
 __pycache__/
+.parcel-cache/
 *.sqlite3
 .git/
 venv/
