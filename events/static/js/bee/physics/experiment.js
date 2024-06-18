@@ -734,6 +734,46 @@ class ProtoDUNEVD extends Experiment {
 }
 
 // --------------------------------------------------------
+class ProtoDUNEHD extends Experiment {
+
+    constructor() {
+        super('protodunehd');
+        this.updateTPCLocation([     
+            [-352.949, -1.00198, 3.6375, 603.861, -0.59375, 231.066],
+            [0.801975, 352.749, 3.6375, 603.861, -0.59375, 231.066],
+            [-352.949, -1.00198, 3.6375, 603.861, 231.466, 463.126],
+            [0.801975, 352.749, 3.6375, 603.861, 231.466, 463.126]
+        ]);
+
+        this.tpc.viewAngle = [-35.7, 35.7, 0];
+        this.updateBoxROI([-200, 0, 250, 500, 0, 500]);
+        this.tpc.driftVelocity = 0.16; // cm/us
+        this.daq.timeBeforeTrigger = 500 * 0.5; //us
+        this.daq.timeAfterTrigger = 5500 * 0.5; //us
+        this.beam.dir = [-0.178177, -0.196387, 0.959408];
+        this.beam.center = [-27.173, 421.445, 0];
+        this.daq.triggerMap = {
+            '12': 'Beam',
+            '13': 'CRT',
+            '8': 'Random'
+        };
+        // this.daq.momentumMap = {
+        //     '5762': '2 GeV',
+        //     '5145': '7 GeV',
+        //     '5387': '1 GeV',
+        //     '5432': '2 GeV',
+        //     '5770': '6 GeV',
+        //     '5786': '3 GeV',
+        //     '5826': '0.5 GeV',
+        //     '5834': '0.3 GeV'
+        // };
+        this.camera.depth = 3000;
+
+    }
+
+}
+
+// --------------------------------------------------------
 class DUNEFDVD186 extends Experiment {
 
     constructor() {
@@ -1134,6 +1174,7 @@ function createExperiment(name) {
     else if (name == 'dune35t') { exp = new DUNE35t(); }
     else if (name == 'protodunevd-test') { exp = new ProtoDUNEVDTest(); }
     else if (name == 'protodunevd') { exp = new ProtoDUNEVD(); }
+    else if (name == 'protodunehd') { exp = new ProtoDUNEHD(); }
     else if (name == 'sbnd') { exp = new SBND(); }
     else if (name == 'dunefdvd-1x8x6') { exp = new DUNEFDVD186(); }
     else { exp = new MicroBooNE(); } // default
