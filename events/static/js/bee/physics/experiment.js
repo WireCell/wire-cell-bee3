@@ -751,7 +751,8 @@ class ProtoDUNEHD extends Experiment {
         this.daq.timeBeforeTrigger = 500 * 0.5; //us
         this.daq.timeAfterTrigger = 5500 * 0.5; //us
         this.beam.dir = [-0.178177, -0.196387, 0.959408];
-        this.beam.center = [-27.173, 421.445, 0];
+        // this.beam.center = [-27.173, 421.445, 0];
+        this.beam.center = [-53.6, 401.1, 0];
         this.daq.triggerMap = {
             '12': 'Beam',
             '13': 'CRT',
