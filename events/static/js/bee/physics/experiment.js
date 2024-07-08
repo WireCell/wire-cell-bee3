@@ -27,6 +27,7 @@ class Experiment {
             beamTimeMax: 6,
             numiTimeMin: 4,  // time window for NUMI beam flash, (us) 
             numiTimeMax: 18,
+            peScaling: 1,
         };
         this.camera = {
             depth: 2000
@@ -34,6 +35,25 @@ class Experiment {
     }
 
     nTPC() { return this.tpc.location.length; }
+    
+    halfXYZ(i) { return [
+        (this.tpc.location[i][1] - this.tpc.location[i][0]) / 2,
+        (this.tpc.location[i][3] - this.tpc.location[i][2]) / 2,
+        (this.tpc.location[i][5] - this.tpc.location[i][4]) / 2]; 
+    }
+
+    center(i) { return [
+        (this.tpc.location[i][1] + this.tpc.location[i][0]) / 2,
+        (this.tpc.location[i][3] + this.tpc.location[i][2]) / 2,
+        (this.tpc.location[i][5] + this.tpc.location[i][4]) / 2]; 
+    }
+
+    driftDir(i) {
+        return ((i % 2) -0.5) * -2; // -1 or 1
+    }
+    
+    opTPC(i) { return 0; } // TPC no for op detector i
+
     toString() { return `${this.name}`; }
 
     updateTPCLocation(loc) {
@@ -1160,7 +1180,11 @@ class SBND extends Experiment {
             310: [-213.75,135,489.146, 2],
             311: [213.75,135,489.146, 2],
        }, 312);
+
+       this.op.peScaling = 0.5
     }
+
+    opTPC(i) { return this.op.location[i][0]<0 ? 0: 1; } // TPC no for op detector i
 
 }
 

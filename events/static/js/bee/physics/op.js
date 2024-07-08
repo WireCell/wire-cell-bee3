@@ -30,97 +30,149 @@ class OP {
 
         if(this.group_op != null) { this.bee.scene3d.scene.main.remove(this.group_op) }
         this.group_op = new THREE.Group();
-        let boxhelper = new THREE.Object3D;
 
-        let exp = this.store.experiment;
-        let [halfx, halfy, halfz] = exp.tpc.halfxyz;
-        let opBox = new THREE.Mesh(
-            new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
-            new THREE.MeshBasicMaterial( {
-                color: 0x96f97b,
-                transparent: true,
-                depthWrite: true,
-                opacity: 0.5,
-        }));
-        let box = new THREE.BoxHelper(opBox);
-        box.material.color.setHex(0xff0000);
-        boxhelper.add(box);
-        boxhelper.position.set(...exp.toLocalXYZ(exp.tpc.center[0]+driftV*t, exp.tpc.center[1], exp.tpc.center[2]));
-        this.group_op.add(boxhelper);
+        for (let iTPC=0; iTPC<this.store.experiment.nTPC(); iTPC++) {
+            // console.log(this.store.experiment.halfXYZ(iTPC), this.store.experiment.center(iTPC), this.store.experiment.driftDir(iTPC));
+            let boxhelper = new THREE.Object3D;
 
-        let location = this.store.experiment.op.location;
-        let nDet = this.store.experiment.op.nDet;
-        for (let i=0; i<nDet; i++) {
-            let radius = 10;
-            let segments = 32; //<-- Increase or decrease for more resolution I guess
-
-            let circleGeometry = new THREE.CircleGeometry( radius, segments );
-            let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
-                color: 0xbbbbbb,
-                opacity: 0.01,
-                side: THREE.DoubleSide
+            let exp = this.store.experiment;
+            let [halfx, halfy, halfz] = this.store.experiment.halfXYZ(iTPC);
+            let opBox = new THREE.Mesh(
+                new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
+                new THREE.MeshBasicMaterial( {
+                    color: 0x96f97b,
+                    transparent: true,
+                    depthWrite: true,
+                    opacity: 0.5,
             }));
-            circle.rotation.y = Math.PI / 2;
-            circle.position.set(...exp.toLocalXYZ(location[i][0]+driftV*t, location[i][1], location[i][2]));
-            this.group_op.add(circle);
-
-            if (this.store.config.op.showPMTClone) {
-                let circle2 =circle.clone();
-                circle2.rotation.x = Math.PI / 2;
-                circle2.rotation.y = 0;
-                circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
-                circle2.position.y = boxhelper.position.y + halfy;
-                this.group_op.add(circle2);
-            }
-        }
-
-        for (let i=0; i<nDet; i++) {
-            if (pes[i] > 0.01 ) {
-                let radius = Math.sqrt(pes[i]);
-                let segments = 32; //<-- Increase or decrease for more resolution I guess
-
-                let circleGeometry = new THREE.CircleGeometry( radius, segments );
-                let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
-                    color: 0xff0000,
-                    opacity: 0.2,
-                    side: THREE.DoubleSide
-                }));
-                circle.rotation.y = Math.PI / 2;
-                circle.position.set(...exp.toLocalXYZ(location[i][0]+driftV*t, location[i][1], location[i][2]));
-                this.group_op.add(circle);
-
-                if (this.store.config.op.showPMTClone) {
-                    let circle2 =circle.clone();
-                    circle2.rotation.x = Math.PI / 2;
-                    circle2.rotation.y = 0;
-                    circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
-                    circle2.position.y = boxhelper.position.y + halfy;
-                    this.group_op.add(circle2);
-                }
-            }
-
-            if (this.store.config.op.showPred) {
-                try {
-                    if (pes_pred[i] > 0.01 ) {
-                        let radius_pred = Math.sqrt(pes_pred[i]);
-                        let segments_pred = 32;
-                        let circleGeometry_pred = new THREE.CircleGeometry( radius_pred, segments_pred );
-                        let circle_pred = new THREE.Mesh(circleGeometry_pred, new THREE.MeshBasicMaterial({
-                            color: 0x15b01a,
-                            opacity: 0.2,
-                            side: THREE.DoubleSide
-                        }));
-                        circle_pred.rotation.y = Math.PI / 2;
-                        circle_pred.position.set(...exp.toLocalXYZ(location[i][0]+driftV*t, location[i][1]-halfy*2, location[i][2]));
-                        this.group_op.add(circle_pred);
+            let box = new THREE.BoxHelper(opBox);
+            box.material.color.setHex(0xff0000);
+            boxhelper.add(box);
+            let sx = exp.center(iTPC)[0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted x location
+            boxhelper.position.set(...exp.toLocalXYZ(sx, exp.center(iTPC)[1], exp.center(iTPC)[2]));
+            this.group_op.add(boxhelper);
+    
+            let location = this.store.experiment.op.location;
+            let nDet = this.store.experiment.op.nDet;
+            if (this.store.experiment.name == "sbnd") {
+                for (let i=0; i<nDet; i++) {
+                    if (this.store.experiment.opTPC(i) != iTPC) continue;
+                    let detType = location[i][3] == undefined ? 1 : location[i][3];
+                    let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
+                    if (detType == 1) {
+                        let radius = 10.16;
+                        let segments = 32; //<-- Increase or decrease for more resolution
+            
+                        let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                        let circle = new THREE.LineSegments(
+                            new THREE.EdgesGeometry(circleGeometry), 
+                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
+                        );
+                        circle.rotation.y = Math.PI / 2;
+                        circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                        this.group_op.add(circle);
+                    }
+                    else if (detType == 2) {
+                        let xara = new THREE.LineSegments(
+                            new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)), 
+                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
+                        );
+                        xara.rotation.y = Math.PI / 2;
+                        xara.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                        this.group_op.add(xara);
+                    }
+        
+                    if (this.store.config.op.showPMTClone) {
+                        let circle2 =circle.clone();
+                        circle2.rotation.x = Math.PI / 2;
+                        circle2.rotation.y = 0;
+                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
+                        circle2.position.y = boxhelper.position.y + halfy;
+                        this.group_op.add(circle2);
                     }
                 }
-                catch(err) {
-                    // console.log(err);
+            }
+            else { // draw uboone pmts
+                for (let i=0; i<nDet; i++) {
+                    if (this.store.experiment.opTPC(i) != iTPC) continue;
+                    let radius = 10;
+                    let segments = 32; //<-- Increase or decrease for more resolution I guess
+        
+                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
+                        color: 0xbbbbbb,
+                        opacity: 0.01,
+                        side: THREE.DoubleSide
+                    }));
+                    circle.rotation.y = Math.PI / 2;
+                    let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
+                    circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                    this.group_op.add(circle);
+        
+                    if (this.store.config.op.showPMTClone) {
+                        let circle2 =circle.clone();
+                        circle2.rotation.x = Math.PI / 2;
+                        circle2.rotation.y = 0;
+                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
+                        circle2.position.y = boxhelper.position.y + halfy;
+                        this.group_op.add(circle2);
+                    }
                 }
             }
 
+    
+            for (let i=0; i<nDet; i++) {
+                if (this.store.experiment.opTPC(i) != iTPC) continue;
+                if (pes[i] > 0.01 ) {
+                    let radius = Math.sqrt(pes[i]) * this.store.experiment.op.peScaling;
+                    let segments = 32; //<-- Increase or decrease for more resolution I guess
+    
+                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
+                        color: 0xff0000,
+                        opacity: 0.2,
+                        side: THREE.DoubleSide
+                    }));
+                    circle.rotation.y = Math.PI / 2;
+                    let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
+                    circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                    this.group_op.add(circle);
+    
+                    if (this.store.config.op.showPMTClone) {
+                        let circle2 =circle.clone();
+                        circle2.rotation.x = Math.PI / 2;
+                        circle2.rotation.y = 0;
+                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
+                        circle2.position.y = boxhelper.position.y + halfy;
+                        this.group_op.add(circle2);
+                    }
+                }
+    
+                if (this.store.config.op.showPred) {
+                    try {
+                        if (pes_pred[i] > 0.01 ) {
+                            let radius_pred = Math.sqrt(pes_pred[i]) * this.store.experiment.op.peScaling;
+                            let segments_pred = 32;
+                            let circleGeometry_pred = new THREE.CircleGeometry( radius_pred, segments_pred );
+                            let circle_pred = new THREE.Mesh(circleGeometry_pred, new THREE.MeshBasicMaterial({
+                                color: 0x15b01a,
+                                opacity: 0.2,
+                                side: THREE.DoubleSide
+                            }));
+                            circle_pred.rotation.y = Math.PI / 2;
+                            let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
+                            circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
+                            this.group_op.add(circle_pred);
+                        }
+                    }
+                    catch(err) {
+                        // console.log(err);
+                    }
+                }
+    
+            }
         }
+
 
         if (this.store.config.op.matchTiming) {
             this.bee.current_sst.drawInsideSlice(boxhelper.position.x-halfx, 2*halfx);
