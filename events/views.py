@@ -229,9 +229,7 @@ def upload(request):
             # print cmd
             try:
                 output = subprocess.check_output(cmd, shell=True).decode()
-                if (output.startswith("data/\ndata/")) or (
-                    output.startswith("data/0/")
-                ):
+                if (output.startswith("data/\ndata/")) or (output.startswith("data/")):
                     print("Good Format!")
                 else:
                     print("Bad Format!", output)
