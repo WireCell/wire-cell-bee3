@@ -281,7 +281,7 @@ def upload(request):
 def wires(request, exp="uboone", file=None):
     detMap = {
         "protodune": "protodune",
-        "protodunehd": "protodune",
+        "protodunehd": "protodunehd",
         "protodunevd": "protodunevd",
         "uboone": "uboone",
         "microboone": "uboone",
