@@ -39,6 +39,7 @@ class Gui {
         this.folder.sst = this.gui.addFolder("3-D Imaging");
         this.folder.box = this.gui.addFolder("Box of Interest");
         this.folder.slice = this.gui.addFolder("Time Slice");
+        this.folder.deadarea = this.gui.addFolder("Dead Area");
         this.folder.camera = this.gui.addFolder("Camera");
 
         this.folder.general.open();
@@ -125,8 +126,8 @@ class Gui {
         }
 
         if (this.store.event.hasDeadArea) {
-            folder.add(this.store.config.helper, "deadAreaOpacity", 0., 0.9)
-                .name("Inactivity").step(0.1)
+            this.folder.deadarea.add(this.store.config.helper, "deadAreaOpacity", 0., 0.9)
+                .name("Opacity").step(0.1)
                 .onChange((value) => {
                     if (this.bee.deadarea.mesh != null) {
                         this.bee.deadarea.mesh.material.opacity = value;

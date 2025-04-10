@@ -92,7 +92,16 @@ class EventSet(models.Model):
         return "op" in self.data_info(eventNo)
 
     def has_DeadArea(self, eventNo=0):
-        return "channel-deadarea" in self.data_info(eventNo)
+        return len(self.deadarea_list(eventNo)) > 0
+        # return "channel-deadarea" in self.data_info(eventNo)
+    
+    def deadarea_list(self, eventNo=0):
+        results = []
+        info = self.data_info(eventNo)
+        for name in sorted(info.keys()):
+            if name.startswith("channel-deadarea"):
+                results.append(name)
+        return results
 
     def content_list(self, eventNo=0):
         results = []

@@ -4,12 +4,44 @@ class DeadArea {
     constructor(store, bee) {
         this.store = store;
         this.bee = bee;
+        this.gui = bee.gui;
+        let url = this.store.url.base_url + 'deadarea/';
+        $.getJSON(url, (data) => {
+            // console.log('DeadArea data loaded', data);
+            this.deadarea_list = data.deadarea_list
+            this.deadarea_list_short = data.deadarea_list.map((item) => {
+                return item.replace('channel-deadarea', '');
+            });
+            this.init();
+            this.initGui();
 
-        this.init();
+        })
+    }
+
+    initGui() {
+        let folder = this.gui.folder.deadarea;
+        let config = {
+            'deadAreaList': [],
+        }
+        folder.add(config, 'deadAreaList', this.deadarea_list_short)
+        .name("Dead Area")
+        .setValue(this.deadarea_list_short[0])
+        .onChange((value) => {
+            console.log(value);
+        });
+
+        // folder.__controllers[this.index].name(`${this.index + 1}. ${name}`);
     }
 
     init() {
-        this.url = this.store.url.base_url + 'channel-deadarea/';
+        // console.log(this.deadarea_list)
+        if (this.deadarea_list.length === 0) {
+            // this.store.dom.el_loadingbar.html(this.store.dom.el_loadingbar.html() + "<br /><strong class='success'>No</strong> DeadArea ... files. ");
+            return;
+        }
+        else {
+            this.url = this.store.url.base_url + this.deadarea_list[0];
+        }
         let el = this.store.dom.el_loadingbar;
         this.process = $.getJSON(this.url, (data) => {
             this.data = data;

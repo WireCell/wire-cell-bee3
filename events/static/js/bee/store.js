@@ -20,6 +20,7 @@ store.config = {
     helper: {
         showTPC: true,
         showAxes: false,
+        deadAreaList: [],
         deadAreaOpacity: 0.0,
         showMCNeutral: false,
         showBeam: false,

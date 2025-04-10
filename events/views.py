@@ -194,6 +194,15 @@ def data(request, set_id, event_id, name):
     except IOError:
         return HttpResponse(filename + " does not exist")
 
+def deadarea_info(request, set_id, event_id):
+    """only for ajax"""
+    eventset = get_eventset(set_id)
+    event_id = int(event_id)
+    data = {
+        "deadarea_list": eventset.deadarea_list(event_id),
+    }
+    return HttpResponse(json.dumps(data))
+
 
 def evd_2D(request, set_id, event_id):
     # print
