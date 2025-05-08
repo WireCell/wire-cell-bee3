@@ -43,13 +43,15 @@ class DeadArea {
             this.url = this.store.url.base_url + this.deadarea_list[0];
         }
         let el = this.store.dom.el_loadingbar;
+        // console.log(this.url);
         this.process = $.getJSON(this.url, (data) => {
             this.data = data;
+            // console.log('DeadArea data loaded', this.data);
             el.html(el.html() + "<br /><strong class='success'>Loading</strong> DeadArea ... done. ");
             this.initWorker();
         })
             .fail(() => {
-                // console.log(`no deadarea found: ${this.url}`);
+                console.log(`no deadarea found: ${this.url}`);
             });
     }
 
@@ -75,6 +77,7 @@ class DeadArea {
             mergedGeometry.setAttribute('normal', new THREE.BufferAttribute(e.data.normal, 3));
             let material = new THREE.MeshBasicMaterial({
                 color: 0x888888,
+                // color: 0xFF0000,
                 transparent: true,
                 depthWrite: true,
                 opacity: this.store.config.helper.deadAreaOpacity,
@@ -89,6 +92,8 @@ class DeadArea {
             vertices: this.data,
             geo: {
                 halfx: this.store.experiment.tpc.halfxyz[0],
+                // halfx: this.store.experiment.halfXYZ(0)[0],
+                // halfx: 0,
                 center_y: this.store.experiment.tpc.center[1],
                 center_z: this.store.experiment.tpc.center[2]
             }
