@@ -18,6 +18,11 @@ class Scene3D {
 
         this.scene.main = new THREE.Scene();
         this.scene.slice = new THREE.Scene();
+
+        if (this.store.experiment.name.includes('vd')) { // vd experiments drift is vertical
+            this.scene.main.rotation.z = Math.PI / 2;
+            this.scene.slice.rotation.z = Math.PI / 2;
+        }
     }
 
     initCamera() {
