@@ -26,7 +26,7 @@ if HOST_NAME.startswith('lycastus'):
     ALLOWED_HOSTS = ['phy.bnl.gov', 'lycastus.phy.bnl.gov']
 elif HOST_NAME.startswith('twister'):
     SITE_TWISTER = True
-    DEBUG = True
+    DEBUG = False
     DATA_DIR = '../../public_html/examples'
     ALLOWED_HOSTS = ['phy.bnl.gov', 'twister.phy.bnl.gov']
 else:

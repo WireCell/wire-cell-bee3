@@ -746,7 +746,7 @@ class ProtoDUNEVD extends Experiment {
             [3.03, 313.03, 0, 337, 149.65, 299.3]
 
         ]);
-        this.tpc.viewAngle = [-45, 45, 0];
+        this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
 
     }
