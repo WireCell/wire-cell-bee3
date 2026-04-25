@@ -6,15 +6,8 @@ This guide gets the Django dev server running on a Mac. Budget ~15 minutes for t
 
 Before touching any commands, read these — each one will silently break the setup if missed.
 
-**1. Python 3.8 is required.**
-`requirements.txt` pins `backports.zoneinfo==0.2.1`, which only installs on Python 3.8. On Python 3.9+, `pip install` will fail with a wheel-build error. Use `pyenv` to manage this:
-```bash
-brew install pyenv
-pyenv install 3.8.18
-pyenv local 3.8.18   # writes .python-version to the repo root
-python --version     # should print Python 3.8.18
-```
-If you want to use Python 3.10+, remove the `backports.zoneinfo==0.2.1` line from `requirements.txt` before installing. Django 4.1 works fine on 3.10/3.11.
+**1. Only Django and its direct dependencies are needed.**
+`requirements.txt` pins many packages (`fabric`, `paramiko`, `backports.zoneinfo`, etc.) that are unused in the committed code. On Python 3.9+ the `backports.zoneinfo` line fails to install. Just install Django directly into the venv — that's all the app requires to run.
 
 **2. `bee/bee.conf` must exist before the server starts.**
 `bee/settings.py` reads `SECRET_KEY` from this file at import time (`settings.py:40–41`). The file is gitignored, so it will never appear after a `git clone`. Without it, every `manage.py` command crashes with `configparser.NoSectionError`. See step 3 below.
@@ -40,42 +33,69 @@ The upload view shells out to `unzip` (`views.py:233–255`). macOS ships `unzip
 git clone <repo-url> wire-cell-bee3
 cd wire-cell-bee3
 
-# 2. Create and activate a virtual environment
-python -m venv venv
+# 2. Create the virtual environment (venv/ is already gitignored)
+python3 -m venv venv
+
+# 3. Activate it — or let direnv do it automatically (see direnv section below)
 source venv/bin/activate
 
-# 3. Install dependencies
-pip install -r requirements.txt
-```
+# 4. Install only what the app needs (skip the bloated requirements.txt)
+pip install "Django==4.1.2"
 
-> **If you are on Python 3.9+:** edit `requirements.txt` first and delete the `backports.zoneinfo==0.2.1` line, then run `pip install`.
-
-```bash
-# 4. Create bee/bee.conf  (the app will not start without this)
-cat > bee/bee.conf << 'EOF'
+# 5. Create bee/bee.conf  (the app will not start without this)
+SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
+cat > bee/bee.conf << EOF
 [common]
-SECRET_KEY = change-this-to-any-long-random-string-you-like
+SECRET_KEY = $SECRET
 EOF
 ```
 
 > On a production host you would also add `MEDIA_ROOT = /path/to/media` here, but locally `settings.py` ignores that key.
 
 ```bash
-# 5. Initialize the database
+# 6. Initialize the database
 python manage.py migrate
 
-# 6. Create the upload staging directories
+# 7. Create the upload staging directories
 #    (prevents 500 on /wires/archive/ and upload endpoint)
 mkdir -p tmp/WireGeometry/archive
 
-# 7. (Optional) Create a superuser for /admin/
+# 8. (Optional) Create a superuser for /admin/
 python manage.py createsuperuser
+```
 
-# 8. Start the development server
+## Starting and Stopping the Server
+
+```bash
+# Start (foreground — Ctrl-C to stop)
 python manage.py runserver
+
+# Start on a different port
+python manage.py runserver 8080
 ```
 
 The server listens on http://127.0.0.1:8000/
+
+## Auto-activation with direnv
+
+[direnv](https://direnv.net/) activates the venv automatically whenever you `cd` into the project directory and deactivates it when you leave.
+
+```bash
+# Install once (if not already installed)
+brew install direnv
+
+# Add to your shell — add this line to ~/.zshrc (or ~/.bashrc)
+eval "$(direnv hook zsh)"   # for zsh
+# eval "$(direnv hook bash)"  # for bash
+
+# Inside the project directory, create .envrc
+echo 'source venv/bin/activate' > .envrc
+
+# Trust it (one-time per directory)
+direnv allow
+```
+
+After that, entering the directory activates the venv and `python` points to the project's Python automatically. `.envrc` is gitignored.
 
 ---
 
@@ -130,8 +150,8 @@ Expected on-disk layout (see `overview.md` for full details):
 
 | Error | Cause | Fix |
 |---|---|---|
-| `configparser.NoSectionError: No section: 'common'` | `bee/bee.conf` missing or empty | Create the file as shown in step 4 |
-| `pip` fails on `backports.zoneinfo` | Python version is 3.9+ | Remove that line from `requirements.txt` before installing |
+| `configparser.NoSectionError: No section: 'common'` | `bee/bee.conf` missing or empty | Create the file as shown in step 5 |
 | `FileNotFoundError: .../uboone.json` | Visiting `/wires/` without geometry files | Use `/wires/archive/` instead, or place the JSON file at `tmp/WireGeometry/uboone.json` |
 | Index page lists zero events | `../wire-cell/` directory doesn't exist | Expected — see Loading Event Data above |
 | `500` on `/wires/archive/` | `tmp/WireGeometry/archive/` directory missing | Run `mkdir -p tmp/WireGeometry/archive` |
+| direnv not activating | Hook not in shell config | Add `eval "$(direnv hook zsh)"` to `~/.zshrc` and restart the shell |
