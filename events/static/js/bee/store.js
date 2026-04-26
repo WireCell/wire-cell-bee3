@@ -26,7 +26,8 @@ store.config = {
         showBeam: false,
         showPD: false,
         showSCB: true,
-        speech: false
+        speech: false,
+        reverseDrift: false
     },
     mc: {
         showMC: false,

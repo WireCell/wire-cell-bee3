@@ -165,3 +165,4 @@ Expected on-disk layout (see `overview.md` for full details):
 | `500` on `/wires/archive/` | `tmp/WireGeometry/archive/` directory missing | Run `mkdir -p tmp/WireGeometry/archive` |
 | direnv not activating | Hook not in shell config | Add `eval "$(direnv hook zsh)"` to `~/.zshrc` and restart the shell |
 | Event page stuck on "Working ..." | `events/static/js/bee/dist/bee.js` was never built | Run step 8: `cd events/static/js/bee && npm install && npx parcel build --no-source-maps --public-url ./ bee.js wires-vue.js` |
+| U/V projections look swapped or mirrored (SBND / multi-TPC) | One TPC drifts in the opposite direction | Enable **Helper → Reverse Drift Axis** in the dat.GUI panel — see `docs/overview.md` for details |

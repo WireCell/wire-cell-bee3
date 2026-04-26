@@ -113,6 +113,10 @@ class Gui {
             .name("Show TPC")
             .onChange(() => { this.bee.helper.showTPC() });
 
+        folder.add(this.store.config.helper, "reverseDrift")
+            .name("Reverse Drift Axis")
+            .onChange(val => this.bee.scene3d.setReverseDrift(val));
+
         if (exp.beam.dir != null && exp.beam.center != null) {
             folder.add(this.store.config.helper, "showBeam")
                 .name("Show Beam")

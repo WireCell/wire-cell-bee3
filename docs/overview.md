@@ -119,6 +119,50 @@ MEDIA_ROOT = /path/to/media   # only needed on non-local (production) hosts
 
 **`CSRF_TRUSTED_ORIGINS`** is hardcoded to `['https://www.phy.bnl.gov']` — must be extended for any other production domain.
 
+## 3D Viewer Controls
+
+The 3D event display is served at `/set/<set_id>/event/<event_id>/` and built from the Parcel-bundled ES-module source under `events/static/js/bee/`.
+
+### Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `x` | Look down the drift axis (Y-Z front view) |
+| `y` | Look down the vertical axis (X-Z top view) |
+| `z` | Look down the beam axis (X-Y side view) |
+| `u` | W-plane projection along U wires (time × U-channel) |
+| `v` | W-plane projection along V wires (time × V-channel) |
+| `w` | W-plane projection along W wires (time × W-channel) |
+| `r` | Reset camera |
+
+### dat.GUI panel
+
+The panel (top-right) is divided into folders:
+
+| Folder | Notable controls |
+|---|---|
+| **General** | Event number, light/dark theme, charge display, cluster colours, overlay mode |
+| **Helper** | Show Axes, Show TPC outlines, Show Beam, Show Ph. Det., **Reverse Drift Axis** (see below) |
+| **Monte Carlo** | Show/hide MC truth particles (present only when MC data is available) |
+| **Optical Flash** | Show/hide flash-matched clusters and PMT predictions |
+| **3-D Imaging** | Toggle visibility and colour of each reco layer (SST) |
+| **Box of Interest** | Crop the display to an XYZ bounding box |
+| **Time Slice** | Semi-transparent slice plane along the drift axis |
+| **Camera** | Ortho/perspective, multi-view, 2D-view dropdown, fullscreen |
+
+### Reverse Drift Axis toggle (Helper folder)
+
+Some multi-TPC detectors (e.g. SBND) have two TPCs that share a central cathode but drift in opposite directions.  Because the channel definitions are shared across both anodes, one TPC's 2D projection images appear mirrored relative to signal-processing (SP) output when viewed in the standard orientation.
+
+**Helper → Reverse Drift Axis** flips the drift (X) axis of the entire scene so that the mirrored TPC's W/U/V projections align with the SP reference images.  The U and V projection angles are also corrected automatically: because the drift-reversed TPC's wire planes are geometrically the mirror of the other TPC's, the correct projection rotation is `-rot` (where `rot` is the stored viewAngle), not the default `+rot`.  This ensures the fix works for any wire-angle convention, not just the symmetric ±60° SBND case.
+
+Typical workflow:
+1. Load an event with data from both TPCs.
+2. Press `w` — note which TPC's W projection matches the SP W image and which looks mirrored.
+3. Toggle **Reverse Drift Axis** and press `w` again — the mirrored TPC should now match.
+4. Press `u` and `v` to verify those planes also match.
+5. Toggle off to return to the original orientation.
+
 ## What Is Not in the Repo
 
 The following deployment artifacts are gitignored and live only on the BNL production machines:

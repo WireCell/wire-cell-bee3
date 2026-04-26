@@ -20,7 +20,13 @@ class Scene3D {
         this.scene.slice = new THREE.Scene();
 
         this.rotateVDScene();
+        this.setReverseDrift(this.store.config.helper.reverseDrift);
+    }
 
+    setReverseDrift(on) {
+        const sx = on ? -1 : 1;
+        this.scene.main.scale.x  = sx;
+        this.scene.slice.scale.x = sx;
     }
 
     rotateVDScene(forward=true) {
@@ -199,7 +205,13 @@ class Scene3D {
     xwView() { this.tpcView(2) }
 
     tpcView(index) {
+        // The drift-reversed TPC is geometrically the mirror of the other,
+        // so its wires sit at -alpha. Projecting them to screen-vertical
+        // requires rotation -rot. W (alpha=0) is unaffected.
         let rot = Math.PI / 180 * this.store.experiment.tpc.viewAngle[index];
+        if (this.store.config.helper.reverseDrift) {
+            rot = -rot;
+        }
         if (this.store.experiment.name.includes('vd')) { // vd experiments drift is vertical
             this.camera.active.up.set(0, 1, 0);
             this.camera.active.position.x = -this.store.config.camera.depth;
