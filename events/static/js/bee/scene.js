@@ -105,6 +105,9 @@ class Scene3D {
         this.controller.orbitController = new THREE.OrbitControls(this.camera.active, this.renderer.domElement);
 
         this.controller.active = this.controller.orbitController;
+
+        const o = this.store.config.camera.origin;
+        this.setOrigin(o.x, o.y, o.z);
     }
 
     animate() {
@@ -234,7 +237,34 @@ class Scene3D {
         this.resetScence();
         this.camera.active.up.set(0, 1, 0);
         this.controller.active.reset();
-        this.controller.active.target.set(0, 0, 0);
+        const c = this.store.experiment.tpc.center;
+        this.setOrigin(c[0], c[1], c[2]);
+        this.bee.gui.refreshOriginDisplay();
+    }
+
+    ensureTargetSphere() {
+        if (this.targetSphere != null) return;
+        const geometry = new THREE.SphereGeometry(2, 32, 32);
+        const material = new THREE.MeshNormalMaterial({
+            blending: THREE.NormalBlending,
+            opacity: 0.4,
+            transparent: true,
+            depthWrite: false
+        });
+        this.targetSphere = new THREE.Mesh(geometry, material);
+        this.targetSphere.overdraw = true;
+        this.scene.main.add(this.targetSphere);
+    }
+
+    setOrigin(gx, gy, gz) {
+        const [lx, ly, lz] = this.store.experiment.toLocalXYZ(gx, gy, gz);
+        this.ensureTargetSphere();
+        this.targetSphere.position.set(lx, ly, lz);
+        this.controller.active.target.set(lx, ly, lz);
+        this.controller.active.update();
+        this.store.config.camera.origin.x = gx;
+        this.store.config.camera.origin.y = gy;
+        this.store.config.camera.origin.z = gz;
     }
 
     resetScence() {
@@ -349,28 +379,14 @@ class Scene3D {
     }
 
     setTargetSphere(e) {
-        let loc = this.getIntersect(e);
-        if (null == loc) {
+        const loc = this.getIntersect(e);
+        if (loc == null) {
             this.store.dom.el_statusbar.html('none detected');
             return;
         }
-        else {
-            if (this.targetSphere != null) { this.scene.main.remove(this.targetSphere) }
-            let geometry = new THREE.SphereGeometry(2, 32, 32);
-            let material = new THREE.MeshNormalMaterial({
-                blending: THREE.NormalBlending,
-                opacity: 0.4,
-                transparent: true,
-                depthWrite: false
-            });
-            this.targetSphere = new THREE.Mesh(geometry, material);
-            this.targetSphere.overdraw = true;
-            this.targetSphere.position.x = loc[0];
-            this.targetSphere.position.y = loc[1];
-            this.targetSphere.position.z = loc[2];
-            this.scene.main.add(this.targetSphere);
-            this.controller.active.target.set(...loc);
-        }
+        const [gx, gy, gz] = this.store.experiment.toGlobalXYZ(...loc);
+        this.setOrigin(gx, gy, gz);
+        this.bee.gui.refreshOriginDisplay();
     }
 
     drawSpaceChargeBoundary(shiftx = 0) {

@@ -148,7 +148,22 @@ The panel (top-right) is divided into folders:
 | **3-D Imaging** | Toggle visibility and colour of each reco layer (SST) |
 | **Box of Interest** | Crop the display to an XYZ bounding box |
 | **Time Slice** | Semi-transparent slice plane along the drift axis |
-| **Camera** | Ortho/perspective, multi-view, 2D-view dropdown, fullscreen |
+| **Camera** | Ortho/perspective, multi-view, 2D-view dropdown, **Origin X/Y/Z** (rotation pivot), fullscreen |
+
+### Origin X/Y/Z controls (Camera folder)
+
+**Camera → Origin X (cm) / Origin Y (cm) / Origin Z (cm)** set the rotation/orbit pivot of the 3D display.  Coordinates are in **detector global cm** (the LArSoft/reco frame), matching the `(x, y, z)` readout shown in the status bar when you single-click a hit.
+
+Behaviour:
+- On page load the pivot is initialised to the TPC bounding-box centre and a small semi-transparent sphere is drawn there.
+- **Double-clicking** a reconstructed hit moves the pivot to that hit's global coordinates and updates the three GUI inputs automatically.
+- **Editing** any of the three inputs directly moves the pivot (and the marker sphere) to the typed coordinates — the new origin does not have to correspond to any data point.
+- **Reset Camera** returns the pivot to the TPC centre and resets the inputs.
+
+Typical workflow:
+1. Rotate the scene to find a feature of interest.
+2. Double-click the feature — the orbit centre snaps to it, making fine-grained rotation around that point easy.
+3. Alternatively, type known detector coordinates directly (e.g. from a reco file) into Origin X/Y/Z.
 
 ### Reverse Drift Axis toggle (Helper folder)
 

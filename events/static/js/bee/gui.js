@@ -276,6 +276,12 @@ class Gui {
                 else if (value.indexOf('XW') > 0) { scene3d.xwView(); }
             });
 
+        const origin = config.camera.origin;
+        const onOriginChange = () => scene3d.setOrigin(origin.x, origin.y, origin.z);
+        this.originXController = folder.add(origin, 'x').name('Origin X (cm)').step(1).onChange(onOriginChange);
+        this.originYController = folder.add(origin, 'y').name('Origin Y (cm)').step(1).onChange(onOriginChange);
+        this.originZController = folder.add(origin, 'z').name('Origin Z (cm)').step(1).onChange(onOriginChange);
+
         folder.add(scene3d, 'resetCamera').name('Reset Camera');
         folder.add(scene3d, 'play').name('Fullscreen');
 
@@ -509,6 +515,12 @@ class Gui {
     toggleScan() {
         $('#scan').slideToggle('fast');
         this.bee.scan.loadPreviousScanResults();
+    }
+
+    refreshOriginDisplay() {
+        if (this.originXController) this.originXController.updateDisplay();
+        if (this.originYController) this.originYController.updateDisplay();
+        if (this.originZController) this.originZController.updateDisplay();
     }
 
 }
