@@ -24,6 +24,9 @@ The wires view tries to open `MEDIA_ROOT/WireGeometry/uboone.json` when you visi
 **6. `unzip` must be on your PATH.**
 The upload view shells out to `unzip` (`views.py:233–255`). macOS ships `unzip` by default, so this is usually not a problem.
 
+**7. The JS bundle must be built before the event display works.**
+The 3D viewer (`events/static/js/bee/dist/bee.js`) is a compiled artifact — `dist/` is gitignored so it is never present after a fresh clone. Without it the event page loads but shows only "Working ..." forever. See step 8 below.
+
 ---
 
 ## Setup Steps
@@ -60,7 +63,13 @@ python manage.py migrate
 #    (prevents 500 on /wires/archive/ and upload endpoint)
 mkdir -p tmp/WireGeometry/archive
 
-# 8. (Optional) Create a superuser for /admin/
+# 8. Build the front-end JS bundle (required for the 3D event display)
+cd events/static/js/bee
+npm install
+npx parcel build --no-source-maps --public-url ./ bee.js wires-vue.js
+cd -
+
+# 9. (Optional) Create a superuser for /admin/
 python manage.py createsuperuser
 ```
 
@@ -155,3 +164,4 @@ Expected on-disk layout (see `overview.md` for full details):
 | Index page lists zero events | `../wire-cell/` directory doesn't exist | Expected — see Loading Event Data above |
 | `500` on `/wires/archive/` | `tmp/WireGeometry/archive/` directory missing | Run `mkdir -p tmp/WireGeometry/archive` |
 | direnv not activating | Hook not in shell config | Add `eval "$(direnv hook zsh)"` to `~/.zshrc` and restart the shell |
+| Event page stuck on "Working ..." | `events/static/js/bee/dist/bee.js` was never built | Run step 8: `cd events/static/js/bee && npm install && npx parcel build --no-source-maps --public-url ./ bee.js wires-vue.js` |
