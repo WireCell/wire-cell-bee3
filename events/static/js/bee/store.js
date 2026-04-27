@@ -26,7 +26,8 @@ store.config = {
         showBeam: false,
         showPD: false,
         showSCB: true,
-        speech: false
+        speech: false,
+        reverseDrift: false
     },
     mc: {
         showMC: false,
@@ -79,7 +80,8 @@ store.config = {
         tween_duration: 0.4,
         rotate: false,
         multiview: false,
-        photo_booth: false
+        photo_booth: false,
+        origin: { x: 0, y: 0, z: 0 }   // detector global cm; defaulted to tpc.center on init
     }
 }
 
@@ -222,6 +224,11 @@ class LocalStore {
 store.process = {} // store ajax request objects
 store.process.init = $.getJSON(window.location.href, (data) => {
     store.experiment = createExperiment(data.experiment);
+
+    // Default origin to TPC center; may be overwritten below by Lockr or server config.
+    store.config.camera.origin.x = store.experiment.tpc.center[0];
+    store.config.camera.origin.y = store.experiment.tpc.center[1];
+    store.config.camera.origin.z = store.experiment.tpc.center[2];
 
     store.config.box.xmin = store.experiment.tpc.boxROI[0];
     store.config.box.xmax = store.experiment.tpc.boxROI[1];

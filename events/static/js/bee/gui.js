@@ -113,6 +113,10 @@ class Gui {
             .name("Show TPC")
             .onChange(() => { this.bee.helper.showTPC() });
 
+        folder.add(this.store.config.helper, "reverseDrift")
+            .name("Reverse Drift Axis")
+            .onChange(val => this.bee.scene3d.setReverseDrift(val));
+
         if (exp.beam.dir != null && exp.beam.center != null) {
             folder.add(this.store.config.helper, "showBeam")
                 .name("Show Beam")
@@ -271,6 +275,12 @@ class Gui {
                 else if (value.indexOf('XV') > 0) { scene3d.xvView(); }
                 else if (value.indexOf('XW') > 0) { scene3d.xwView(); }
             });
+
+        const origin = config.camera.origin;
+        const onOriginChange = () => scene3d.setOrigin(origin.x, origin.y, origin.z);
+        this.originXController = folder.add(origin, 'x').name('Origin X (cm)').step(1).onChange(onOriginChange);
+        this.originYController = folder.add(origin, 'y').name('Origin Y (cm)').step(1).onChange(onOriginChange);
+        this.originZController = folder.add(origin, 'z').name('Origin Z (cm)').step(1).onChange(onOriginChange);
 
         folder.add(scene3d, 'resetCamera').name('Reset Camera');
         folder.add(scene3d, 'play').name('Fullscreen');
@@ -505,6 +515,12 @@ class Gui {
     toggleScan() {
         $('#scan').slideToggle('fast');
         this.bee.scan.loadPreviousScanResults();
+    }
+
+    refreshOriginDisplay() {
+        if (this.originXController) this.originXController.updateDisplay();
+        if (this.originYController) this.originYController.updateDisplay();
+        if (this.originZController) this.originZController.updateDisplay();
     }
 
 }
