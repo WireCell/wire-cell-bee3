@@ -33,7 +33,7 @@ else:
     SITE_LOCAL = True
     DATA_DIR = '../wire-cell'
     DEBUG = True
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.95']
 
 import configparser
 conf = configparser.RawConfigParser()

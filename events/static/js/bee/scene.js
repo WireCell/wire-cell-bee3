@@ -11,6 +11,7 @@ class Scene3D {
         this.initRenderer();
         this.initController();
         this.animate();
+        this.initVR();
     }
 
     initScene() {
@@ -89,6 +90,7 @@ class Scene3D {
     initRenderer() {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         let renderer = this.renderer;
+        renderer.xr.enabled = true;
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth * this.store.config.camera.scale, window.innerHeight);
         renderer.gammaInput = true;
@@ -122,6 +124,14 @@ class Scene3D {
                 self.scene.main.rotation.y = 0;
                 self.scene.slice.rotation.y = 0;
             }
+            // In XR mode, setAnimationLoop drives the frame loop
+            if (self.renderer.xr.isPresenting) {
+                self.renderer.autoClear = true;
+                self.renderer.setScissorTest(false);
+                self.renderer.render(self.scene.main, self.camera.active);
+                return;
+            }
+
             self.animationId = window.requestAnimationFrame(window.animate);
             self.renderer.autoClear = false;
 
@@ -166,6 +176,61 @@ class Scene3D {
             }
         }
         window.animate();
+    }
+
+    initVR() {
+        if (!navigator.xr) return;
+        const renderer = this.renderer;
+        const self = this;
+
+        renderer.xr.addEventListener('sessionstart', () => {
+            self._vrPrevCamera = self.camera.active;
+            self.camera.active = self.camera.pspCamera;
+            self.controller.orbitController.enabled = false;
+            window.cancelAnimationFrame(self.animationId);
+            renderer.setAnimationLoop(window.animate);
+        });
+
+        renderer.xr.addEventListener('sessionend', () => {
+            self.camera.active = self._vrPrevCamera;
+            self.controller.orbitController.enabled = true;
+            renderer.setAnimationLoop(null);
+            window.animate();
+        });
+
+        renderer.xr.setReferenceSpaceType('local');
+
+        navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+            if (!supported) return;
+            const menuItem = document.getElementById('vr-menu-item');
+            const link = document.getElementById('enterVR');
+            document.getElementById('vr-divider').style.display = '';
+            menuItem.style.display = '';
+            let entering = false;
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                if (entering) return;
+                const session = renderer.xr.getSession();
+                if (session) {
+                    session.end();
+                } else {
+                    entering = true;
+                    navigator.xr.requestSession('immersive-vr')
+                        .then(session => {
+                            renderer.xr.setSession(session);
+                            entering = false;
+                            link.textContent = 'Exit VR';
+                            session.addEventListener('end', () => {
+                                link.textContent = 'Enter VR';
+                            });
+                        })
+                        .catch(err => {
+                            entering = false;
+                            console.error('VR session failed:', err);
+                        });
+                }
+            });
+        });
     }
 
     yzView() {
