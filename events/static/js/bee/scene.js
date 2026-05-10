@@ -115,19 +115,22 @@ class Scene3D {
     animate() {
         let self = this;
         window.animate = () => {
-            if (this.store.config.camera.rotate) {
-                let newPos = Date.now() * 0.0001;
-                self.scene.main.rotation.y = newPos;
-                self.scene.slice.rotation.y = newPos;
-            }
-            else {
-                self.scene.main.rotation.y = 0;
-                self.scene.slice.rotation.y = 0;
+            // In XR mode, rotation.y is owned by VR locomotion
+            if (!self.renderer.xr.isPresenting) {
+                if (this.store.config.camera.rotate) {
+                    let newPos = Date.now() * 0.0001;
+                    self.scene.main.rotation.y = newPos;
+                    self.scene.slice.rotation.y = newPos;
+                }
+                else {
+                    self.scene.main.rotation.y = 0;
+                    self.scene.slice.rotation.y = 0;
+                }
             }
             // In XR mode, setAnimationLoop drives the frame loop
             if (self.renderer.xr.isPresenting) {
+                self._updateVRLocomotion();
                 self.renderer.autoClear = true;
-                self.renderer.setScissorTest(false);
                 self.renderer.render(self.scene.main, self.camera.active);
                 return;
             }
@@ -187,6 +190,9 @@ class Scene3D {
             self._vrPrevCamera = self.camera.active;
             self.camera.active = self.camera.pspCamera;
             self.controller.orbitController.enabled = false;
+            self._vrYaw = 0;
+            self._vrInitPos = self.scene.main.position.clone();
+            if (self.bee.deadarea?.mesh) self.bee.deadarea.mesh.visible = false;
             window.cancelAnimationFrame(self.animationId);
             renderer.setAnimationLoop(window.animate);
         });
@@ -194,6 +200,11 @@ class Scene3D {
         renderer.xr.addEventListener('sessionend', () => {
             self.camera.active = self._vrPrevCamera;
             self.controller.orbitController.enabled = true;
+            self.scene.main.position.copy(self._vrInitPos);
+            self.scene.slice.position.copy(self._vrInitPos);
+            self.scene.main.rotation.y = 0;
+            if (self.bee.deadarea?.mesh) self.bee.deadarea.mesh.visible = true;
+            self.scene.slice.rotation.y = 0;
             renderer.setAnimationLoop(null);
             window.animate();
         });
@@ -202,12 +213,11 @@ class Scene3D {
 
         navigator.xr.isSessionSupported('immersive-vr').then(supported => {
             if (!supported) return;
-            const menuItem = document.getElementById('vr-menu-item');
-            const link = document.getElementById('enterVR');
-            document.getElementById('vr-divider').style.display = '';
-            menuItem.style.display = '';
+            const navItem = document.getElementById('vr-nav-item');
+            const navLink = document.getElementById('vr-nav-link');
+            navItem.style.display = '';
             let entering = false;
-            link.addEventListener('click', e => {
+            const toggleVR = (e) => {
                 e.preventDefault();
                 if (entering) return;
                 const session = renderer.xr.getSession();
@@ -219,9 +229,9 @@ class Scene3D {
                         .then(session => {
                             renderer.xr.setSession(session);
                             entering = false;
-                            link.textContent = 'Exit VR';
+                            navLink.textContent = 'Exit VR';
                             session.addEventListener('end', () => {
-                                link.textContent = 'Enter VR';
+                                navLink.textContent = 'Enter VR';
                             });
                         })
                         .catch(err => {
@@ -229,8 +239,48 @@ class Scene3D {
                             console.error('VR session failed:', err);
                         });
                 }
-            });
+            };
+            navLink.addEventListener('click', toggleVR);
         });
+    }
+
+    _updateVRLocomotion() {
+        const session = this.renderer.xr.getSession();
+        if (!session) return;
+
+        const SPEED = 5.0;
+        const TURN_SPEED = 0.03;
+        const DEAD_ZONE = 0.1;
+
+        const xrCamera = this.renderer.xr.getCamera();
+        const forward = new THREE.Vector3();
+        xrCamera.getWorldDirection(forward);
+        forward.y = 0;
+        if (forward.lengthSq() > 0) forward.normalize();
+        const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        for (const source of session.inputSources) {
+            if (!source.gamepad) continue;
+            const axes = source.gamepad.axes;
+            if (axes.length < 4) continue;
+
+            const sx = axes[2];
+            const sy = axes[3];
+
+            if (source.handedness === 'left') {
+                if (Math.abs(sx) > DEAD_ZONE || Math.abs(sy) > DEAD_ZONE) {
+                    this.scene.main.position.addScaledVector(forward, sy * SPEED);
+                    this.scene.main.position.addScaledVector(right, -sx * SPEED);
+                    this.scene.slice.position.copy(this.scene.main.position);
+                }
+            } else if (source.handedness === 'right') {
+                if (Math.abs(sx) > DEAD_ZONE) {
+                    this._vrYaw += sx * TURN_SPEED;
+                    this.scene.main.rotation.y = this._vrYaw;
+                    this.scene.slice.rotation.y = this._vrYaw;
+                }
+            }
+        }
     }
 
     yzView() {

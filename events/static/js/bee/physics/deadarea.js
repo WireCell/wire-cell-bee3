@@ -79,7 +79,7 @@ class DeadArea {
                 color: 0x888888,
                 // color: 0xFF0000,
                 transparent: true,
-                depthWrite: true,
+                depthWrite: false,
                 opacity: this.store.config.helper.deadAreaOpacity,
                 side: THREE.DoubleSide,
                 wireframe: false
