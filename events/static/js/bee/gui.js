@@ -129,15 +129,7 @@ class Gui {
                 .onChange(() => { this.bee.helper.showPD() });
         }
 
-        if (this.store.event.hasDeadArea) {
-            this.folder.deadarea.add(this.store.config.helper, "deadAreaOpacity", 0., 0.9)
-                .name("Opacity").step(0.1)
-                .onChange((value) => {
-                    if (this.bee.deadarea && this.bee.deadarea.meshes) {
-                        this.bee.deadarea.meshes.forEach(m => { m.material.opacity = value; });
-                    }
-                });
-        }
+        // Dead Area opacity + per-anode visibility toggles are added by DeadArea.initGui()
 
         let scene3d = this.bee.scene3d;
         if (exp.name == 'uboone') {

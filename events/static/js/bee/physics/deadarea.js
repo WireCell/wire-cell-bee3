@@ -18,8 +18,17 @@ class DeadArea {
     }
 
     initGui() {
-        // All files are rendered simultaneously; the opacity slider in gui.js
-        // covers all meshes via this.meshes.
+        let folder = this.gui.folder.deadarea;
+
+        // Opacity slider — applies to all meshes
+        folder.add(this.store.config.helper, 'deadAreaOpacity', 0., 0.9)
+            .name('Opacity').step(0.1)
+            .onChange((value) => {
+                this.meshes.forEach(m => { m.material.opacity = value; });
+            });
+
+        // Per-anode visibility checkboxes are added dynamically in initWorker()
+        // as each worker resolves, so they appear in arrival order.
     }
 
     init() {
@@ -31,14 +40,14 @@ class DeadArea {
             let url = this.store.url.base_url + name;
             $.getJSON(url, (data) => {
                 el.html(el.html() + `<br /><strong class='success'>Loading</strong> ${name} ... done. `);
-                this.initWorker(data);
+                this.initWorker(data, name);
             }).fail(() => {
                 console.log(`no deadarea found: ${url}`);
             });
         });
     }
 
-    initWorker(rawJson) {
+    initWorker(rawJson, name) {
         // Resolve worker URL (unchanged from original)
         let worker_url = this.store.url.root_url.replace('es6/', '');
         if (worker_url.indexOf('localhost') > 1 || worker_url.indexOf('127.0.0.1') > 1) {
@@ -80,6 +89,10 @@ class DeadArea {
             };
         }
 
+        // Short label: strip the "channel-deadarea" prefix and leading dash
+        const suffix = name.replace('channel-deadarea', '').replace(/^-/, '');
+        const label = suffix || 'all';
+
         let worker = new Worker(worker_url);
         worker.onmessage = (e) => {
             let mergedGeometry = new THREE.BufferGeometry();
@@ -96,6 +109,13 @@ class DeadArea {
             let mesh = new THREE.Mesh(mergedGeometry, material);
             this.meshes.push(mesh);
             this.group.add(mesh);
+
+            // Add a visibility toggle for this anode to the GUI
+            let config = { visible: true };
+            this.gui.folder.deadarea
+                .add(config, 'visible')
+                .name(`Show ${label}`)
+                .onChange((v) => { mesh.visible = v; });
         };
         worker.postMessage({ vertices, geo });
     }
