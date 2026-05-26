@@ -133,8 +133,8 @@ class Gui {
             this.folder.deadarea.add(this.store.config.helper, "deadAreaOpacity", 0., 0.9)
                 .name("Opacity").step(0.1)
                 .onChange((value) => {
-                    if (this.bee.deadarea.mesh != null) {
-                        this.bee.deadarea.mesh.material.opacity = value;
+                    if (this.bee.deadarea && this.bee.deadarea.meshes) {
+                        this.bee.deadarea.meshes.forEach(m => { m.material.opacity = value; });
                     }
                 });
         }
