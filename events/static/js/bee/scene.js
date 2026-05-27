@@ -11,6 +11,7 @@ class Scene3D {
         this.initRenderer();
         this.initController();
         this.animate();
+        this.initVR();
     }
 
     initScene() {
@@ -89,6 +90,7 @@ class Scene3D {
     initRenderer() {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         let renderer = this.renderer;
+        renderer.xr.enabled = true;
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth * this.store.config.camera.scale, window.innerHeight);
         renderer.gammaInput = true;
@@ -113,15 +115,26 @@ class Scene3D {
     animate() {
         let self = this;
         window.animate = () => {
-            if (this.store.config.camera.rotate) {
-                let newPos = Date.now() * 0.0001;
-                self.scene.main.rotation.y = newPos;
-                self.scene.slice.rotation.y = newPos;
+            // In XR mode, rotation.y is owned by VR locomotion
+            if (!self.renderer.xr.isPresenting) {
+                if (this.store.config.camera.rotate) {
+                    let newPos = Date.now() * 0.0001;
+                    self.scene.main.rotation.y = newPos;
+                    self.scene.slice.rotation.y = newPos;
+                }
+                else {
+                    self.scene.main.rotation.y = 0;
+                    self.scene.slice.rotation.y = 0;
+                }
             }
-            else {
-                self.scene.main.rotation.y = 0;
-                self.scene.slice.rotation.y = 0;
+            // In XR mode, setAnimationLoop drives the frame loop
+            if (self.renderer.xr.isPresenting) {
+                self._updateVRLocomotion();
+                self.renderer.autoClear = true;
+                self.renderer.render(self.scene.main, self.camera.active);
+                return;
             }
+
             self.animationId = window.requestAnimationFrame(window.animate);
             self.renderer.autoClear = false;
 
@@ -166,6 +179,108 @@ class Scene3D {
             }
         }
         window.animate();
+    }
+
+    initVR() {
+        if (!navigator.xr) return;
+        const renderer = this.renderer;
+        const self = this;
+
+        renderer.xr.addEventListener('sessionstart', () => {
+            self._vrPrevCamera = self.camera.active;
+            self.camera.active = self.camera.pspCamera;
+            self.controller.orbitController.enabled = false;
+            self._vrYaw = 0;
+            self._vrInitPos = self.scene.main.position.clone();
+            if (self.bee.deadarea?.mesh) self.bee.deadarea.mesh.visible = false;
+            window.cancelAnimationFrame(self.animationId);
+            renderer.setAnimationLoop(window.animate);
+        });
+
+        renderer.xr.addEventListener('sessionend', () => {
+            self.camera.active = self._vrPrevCamera;
+            self.controller.orbitController.enabled = true;
+            self.scene.main.position.copy(self._vrInitPos);
+            self.scene.slice.position.copy(self._vrInitPos);
+            self.scene.main.rotation.y = 0;
+            if (self.bee.deadarea?.mesh) self.bee.deadarea.mesh.visible = true;
+            self.scene.slice.rotation.y = 0;
+            renderer.setAnimationLoop(null);
+            window.animate();
+        });
+
+        renderer.xr.setReferenceSpaceType('local');
+
+        navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+            if (!supported) return;
+            const navItem = document.getElementById('vr-nav-item');
+            const navLink = document.getElementById('vr-nav-link');
+            navItem.style.display = '';
+            let entering = false;
+            const toggleVR = (e) => {
+                e.preventDefault();
+                if (entering) return;
+                const session = renderer.xr.getSession();
+                if (session) {
+                    session.end();
+                } else {
+                    entering = true;
+                    navigator.xr.requestSession('immersive-vr')
+                        .then(session => {
+                            renderer.xr.setSession(session);
+                            entering = false;
+                            navLink.textContent = 'Exit VR';
+                            session.addEventListener('end', () => {
+                                navLink.textContent = 'Enter VR';
+                            });
+                        })
+                        .catch(err => {
+                            entering = false;
+                            console.error('VR session failed:', err);
+                        });
+                }
+            };
+            navLink.addEventListener('click', toggleVR);
+        });
+    }
+
+    _updateVRLocomotion() {
+        const session = this.renderer.xr.getSession();
+        if (!session) return;
+
+        const SPEED = 5.0;
+        const TURN_SPEED = 0.03;
+        const DEAD_ZONE = 0.1;
+
+        const xrCamera = this.renderer.xr.getCamera();
+        const forward = new THREE.Vector3();
+        xrCamera.getWorldDirection(forward);
+        forward.y = 0;
+        if (forward.lengthSq() > 0) forward.normalize();
+        const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        for (const source of session.inputSources) {
+            if (!source.gamepad) continue;
+            const axes = source.gamepad.axes;
+            if (axes.length < 4) continue;
+
+            const sx = axes[2];
+            const sy = axes[3];
+
+            if (source.handedness === 'left') {
+                if (Math.abs(sx) > DEAD_ZONE || Math.abs(sy) > DEAD_ZONE) {
+                    this.scene.main.position.addScaledVector(forward, sy * SPEED);
+                    this.scene.main.position.addScaledVector(right, -sx * SPEED);
+                    this.scene.slice.position.copy(this.scene.main.position);
+                }
+            } else if (source.handedness === 'right') {
+                if (Math.abs(sx) > DEAD_ZONE) {
+                    this._vrYaw += sx * TURN_SPEED;
+                    this.scene.main.rotation.y = this._vrYaw;
+                    this.scene.slice.rotation.y = this._vrYaw;
+                }
+            }
+        }
     }
 
     yzView() {

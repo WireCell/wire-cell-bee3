@@ -33,6 +33,15 @@ body {
     text-align: right;
 }
 
+
+.vr-nav-link {
+    font-weight: bold;
+    color: #8bc34a !important;
+}
+.vr-nav-link:hover {
+    color: #aee060 !important;
+}
+
 #fullscreeninfo {
     position: absolute;
     size: 20px;
