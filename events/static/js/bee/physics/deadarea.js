@@ -1,5 +1,47 @@
 // DeadArea due to dead wires
 
+// Module-level cache: fetched from the main thread (same-origin, no CORS issues)
+// on first use, then shared across all concurrent initWorker calls.
+let _threeCodePromise = null;
+function _getThreeCode(rootUrl) {
+    if (!_threeCodePromise) {
+        _threeCodePromise = fetch(rootUrl + 'static/js/lib/three.min.js').then(r => r.text());
+    }
+    return _threeCodePromise;
+}
+
+const _workerLogic = `
+onmessage = function(e) {
+  var data = e.data.vertices;
+  var geo = e.data.geo;
+  var center_y = geo.center_y;
+  var center_z = geo.center_z;
+  var x0, x1;
+  if (geo.anode_x !== undefined) {
+    x0 = geo.anode_x; x1 = geo.anode_x + geo.anode_dx;
+  } else {
+    x0 = -geo.halfx; x1 = -geo.halfx + 2;
+  }
+  var extrudeSettings = { steps: 100, bevelEnabled: false, extrudePath: null };
+  var mergedGeometry = new THREE.Geometry();
+  for (var i = 0; i < data.length; i++) {
+    var pts = [], raw_pts = data[i], cy = 0, cz = 0;
+    for (var j = 0; j < raw_pts.length; j++) { cy += raw_pts[j][0]; cz += raw_pts[j][1]; }
+    cy /= raw_pts.length; cz /= raw_pts.length;
+    for (var j = 0; j < raw_pts.length; j++) {
+      pts.push(new THREE.Vector2(-raw_pts[j][1] + cz, raw_pts[j][0] - cy));
+    }
+    extrudeSettings.extrudePath = new THREE.SplineCurve3([
+      new THREE.Vector3(x0, cy - center_y, cz - center_z),
+      new THREE.Vector3(x1, cy - center_y, cz - center_z),
+    ]);
+    mergedGeometry.merge(new THREE.ExtrudeGeometry(new THREE.Shape(pts), extrudeSettings));
+  }
+  var buf = new THREE.BufferGeometry().fromGeometry(mergedGeometry);
+  postMessage({ position: buf.attributes.position.array, normal: buf.attributes.normal.array });
+  close();
+};`;
+
 class DeadArea {
     constructor(store, bee) {
         this.store = store;
@@ -48,17 +90,6 @@ class DeadArea {
     }
 
     initWorker(rawJson, name) {
-        // Resolve worker URL (unchanged from original)
-        let worker_url = this.store.url.root_url.replace('es6/', '');
-        if (worker_url.indexOf('localhost') > 1 || worker_url.indexOf('127.0.0.1') > 1) {
-            worker_url += "static/js/worker_deadarea.js";
-        } else if (worker_url.indexOf('twister') > 1) {
-            worker_url = worker_url.replace('bee/', 'static/js/worker_deadarea.js');
-        } else {
-            worker_url = worker_url.replace('bee', 'bee-static');
-            worker_url += "js/worker_deadarea.js";
-        }
-
         const exp = this.store.experiment;
         let geo;
         let vertices;
@@ -93,31 +124,40 @@ class DeadArea {
         const suffix = name.replace('channel-deadarea', '').replace(/^-/, '');
         const label = suffix || 'all';
 
-        let worker = new Worker(worker_url);
-        worker.onmessage = (e) => {
-            let mergedGeometry = new THREE.BufferGeometry();
-            mergedGeometry.setAttribute('position', new THREE.BufferAttribute(e.data.position, 3));
-            mergedGeometry.setAttribute('normal', new THREE.BufferAttribute(e.data.normal, 3));
-            let material = new THREE.MeshBasicMaterial({
-                color: 0x888888,
-                transparent: true,
-                depthWrite: true,
-                opacity: this.store.config.helper.deadAreaOpacity,
-                side: THREE.DoubleSide,
-                wireframe: false,
-            });
-            let mesh = new THREE.Mesh(mergedGeometry, material);
-            this.meshes.push(mesh);
-            this.group.add(mesh);
+        // Fetch raw (non-Parcel-processed) three.min.js from the main thread so it
+        // defines THREE as a global inside the blob worker. blob: URLs are not
+        // interceptable by Chrome extensions, fixing the server-side Chrome error.
+        const rootUrl = this.store.url.root_url;
+        _getThreeCode(rootUrl).then(threeCode => {
+            const blob = new Blob([threeCode, _workerLogic], { type: 'application/javascript' });
+            const blobUrl = URL.createObjectURL(blob);
+            let worker = new Worker(blobUrl);
+            URL.revokeObjectURL(blobUrl);
+            worker.onmessage = (e) => {
+                let mergedGeometry = new THREE.BufferGeometry();
+                mergedGeometry.setAttribute('position', new THREE.BufferAttribute(e.data.position, 3));
+                mergedGeometry.setAttribute('normal', new THREE.BufferAttribute(e.data.normal, 3));
+                let material = new THREE.MeshBasicMaterial({
+                    color: 0x888888,
+                    transparent: true,
+                    depthWrite: true,
+                    opacity: this.store.config.helper.deadAreaOpacity,
+                    side: THREE.DoubleSide,
+                    wireframe: false,
+                });
+                let mesh = new THREE.Mesh(mergedGeometry, material);
+                this.meshes.push(mesh);
+                this.group.add(mesh);
 
-            // Add a visibility toggle for this anode to the GUI
-            let config = { visible: true };
-            this.gui.folder.deadarea
-                .add(config, 'visible')
-                .name(`Show ${label}`)
-                .onChange((v) => { mesh.visible = v; });
-        };
-        worker.postMessage({ vertices, geo });
+                // Add a visibility toggle for this anode to the GUI
+                let config = { visible: true };
+                this.gui.folder.deadarea
+                    .add(config, 'visible')
+                    .name(`Show ${label}`)
+                    .onChange((v) => { mesh.visible = v; });
+            };
+            worker.postMessage({ vertices, geo });
+        });
     }
 
 }
