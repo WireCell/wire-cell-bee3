@@ -1,11 +1,24 @@
 // DeadArea due to dead wires
 
+// Reproduce the same server-layout logic the original worker URL used, but applied
+// to three.min.js. Returns the base URL ending in 'js/' for the given deployment.
+function _staticJsUrl(rootUrl) {
+    if (rootUrl.indexOf('localhost') > 1 || rootUrl.indexOf('127.0.0.1') > 1) {
+        return rootUrl + 'static/js/';
+    } else if (rootUrl.indexOf('twister') > 1) {
+        return rootUrl.replace('bee/', 'static/js/');
+    } else {
+        return rootUrl.replace('bee', 'bee-static') + 'js/';
+    }
+}
+
 // Module-level cache: fetched from the main thread (same-origin, no CORS issues)
 // on first use, then shared across all concurrent initWorker calls.
 let _threeCodePromise = null;
 function _getThreeCode(rootUrl) {
     if (!_threeCodePromise) {
-        _threeCodePromise = fetch(rootUrl + 'static/js/lib/three.min.js').then(r => r.text());
+        const url = _staticJsUrl(rootUrl) + 'lib/three.min.js';
+        _threeCodePromise = fetch(url).then(r => r.text());
     }
     return _threeCodePromise;
 }
