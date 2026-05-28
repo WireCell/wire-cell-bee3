@@ -496,10 +496,14 @@ data-based estimate in §7.4).
 
 ### 8.2 PMT positions
 
-Every PMT entry (`experiment.js:872-991`) had its **X** updated
-±213.4 → ±208.55 cm (GDML photocathode-center X, unchanged between
-v02_02 and v02_06) and its **Z** reduced by 4.20 cm to enter the
-v02_06 `z_J` frame:
+For every PMT entry (`experiment.js:872-991`), **only X and Z were
+modified — Y is untouched**, because the PMT Y rows in Bee
+({±175, ±135, ±95, ±40, 0} cm) already match GDML in both v02_02 and
+v02_06.
+
+- **X**: ±213.4 → ±208.55 cm (GDML photocathode-center X, unchanged
+  between v02_02 and v02_06).
+- **Z**: each value reduced by 4.20 cm to enter the v02_06 `z_J` frame.
 
 | PMT Z rings (cm) | Old (v02_02 z_J) | New (v02_06 z_J) |
 |------------------|------------------|------------------|
@@ -508,15 +512,31 @@ v02_06 `z_J` frame:
 | Third trio       | 288.242, 318.242, 348.242 | 284.042, 314.042, 344.042 |
 | Fourth trio      | 421.526, 451.526, 481.526 | 417.326, 447.326, 477.326 |
 
-Y rows unchanged (already matched GDML).
+Per-entry diff illustration (PMT ID 6):
+
+```
+old: 6: [-213.4,-175,27.8742],
+new: 6: [-208.55,-175,23.6742],
+            ↑ X       ↑ Y         ↑ Z
+            changed   unchanged   changed
+```
+
+(The Y change in the TPC bounding box, ±203.732 → ±200 cm shown in
+§8.1, is a separate edit — it shrinks the displayed *TPC active
+volume* to the three-wire-plane overlap region. It has no connection
+to the PDS Y positions.)
 
 ### 8.3 X-Arapuca positions
 
-Every X-Arapuca entry (`experiment.js:994-1185`) had its **X** updated
-±213.75 → ±214.55 cm (GDML XA center X, unchanged between v02_02 and
-v02_06) and its **Z** reduced by 4.20 cm (same v02_06 `z_J` shift as
-the PMTs). All 24 distinct XA Z values were shifted; the new range is
-**16.0542 → 484.946 cm** (was 20.2542 → 489.146 cm).
+For every X-Arapuca entry (`experiment.js:994-1185`), **only X and Z
+were modified — Y is untouched** (X-Arapuca Y rows already matched
+GDML in both versions).
+
+- **X**: ±213.75 → ±214.55 cm (GDML XA center X, unchanged between
+  v02_02 and v02_06).
+- **Z**: each of the 24 distinct values reduced by 4.20 cm (same
+  v02_06 `z_J` shift as the PMTs). The new Z range is
+  **16.0542 → 484.946 cm** (was 20.2542 → 489.146 cm).
 
 ### 8.4 What was explicitly NOT changed
 
