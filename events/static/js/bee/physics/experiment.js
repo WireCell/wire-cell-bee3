@@ -1185,6 +1185,8 @@ class SBND extends Experiment {
             311: [214.55,135,484.946, 2],
        }, 312);
 
+       this.op.beamTimeMin = -1;  // BNB beam flash window for SBND, (us)
+       this.op.beamTimeMax = 5;
        this.op.peScaling = 0.5
     }
 
