@@ -235,6 +235,10 @@ class Gui {
             .name("Cluster ID").step(1)
             .onFinishChange(() => { this.bee.op.draw() });
 
+        folder.add(this.store.config.op, "sidePanel")
+            .name("Side Panel (detector frame)")
+            .onChange(() => { this.bee.op.draw() });
+
     }
 
     initGuiCamera() {

@@ -95,6 +95,26 @@ class Experiment {
         ];
     }
 
+    // index of the TPC whose active volume box contains the global (larsoft) point;
+    // on no containment, fall back to the TPC whose center is nearest in x.
+    // Used by the detector-frame view to apply the exact dual of the op.js box shift.
+    tpcOf(gx, gy, gz) {
+        for (let i = 0; i < this.nTPC(); i++) {
+            let l = this.tpc.location[i];
+            if (gx >= l[0] && gx <= l[1] &&
+                gy >= l[2] && gy <= l[3] &&
+                gz >= l[4] && gz <= l[5]) {
+                return i;
+            }
+        }
+        let best = 0, bestDx = Infinity;
+        for (let i = 0; i < this.nTPC(); i++) {
+            let dx = Math.abs(gx - this.center(i)[0]);
+            if (dx < bestDx) { bestDx = dx; best = i; }
+        }
+        return best;
+    }
+
 }
 
 

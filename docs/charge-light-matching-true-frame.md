@@ -1,6 +1,8 @@
 # Charge–light matching: a "true detector frame" view (design brainstorm)
 
-> Status: brainstorm / design proposal. No code yet.
+> Status: **Option B implemented** (side-by-side panel). The original brainstorm
+> (both options) is kept below for context; see §11 for what shipped and how to
+> build it locally.
 > Scope: must work generally across multi-drift-volume detectors —
 > **SBND**, **ProtoDUNE-HD** (horizontal drift), and **ProtoDUNE-VD** (vertical drift).
 
@@ -225,3 +227,54 @@ work; don't block the main feature on it.
    global/local data coordinates and should compose cleanly with `reverseDrift`
    (X-scale flip) and `rotateVDScene` (90° about Z) since those are scene-level
    transforms applied after — verify on each detector.
+
+## 11. Implementation status — Option B shipped
+
+**Option B (side-by-side panel) is implemented.** A new **"Side Panel (detector
+frame)"** toggle in the *Optical Flash* GUI folder splits the canvas into two
+viewports sharing one camera: the **left** panel is the existing reco frame
+(clusters fixed, red boxes move with T0) and the **right** panel is the true
+detector frame (red boxes fixed at their real location, charge T0-corrected by the
+exact dual shift). Toggle it off → the original full-screen behavior is restored
+exactly.
+
+Changed files (front-end ES-module source under `events/static/js/bee/`):
+
+| File | Change |
+|---|---|
+| `physics/experiment.js` | `tpcOf(gx,gy,gz)` — maps a point to its containing TPC so the per-point shift is the exact dual of the `op.js` box shift (correct for SBND / HD / VD by construction; no `cathodeX` needed). |
+| `store.js` | `config.op.sidePanel` flag. |
+| `physics/op.js` | Extracted `buildGroup(group, detectorFrame)`; `draw()` builds the reco group into `scene.main` and, when the panel is on, a fixed-box group into `scene.detector`. |
+| `physics/sst.js` | `drawInsideBox(...)` gained optional `targetScene` + `shiftFn`; added `drawDetectorFrame()` / `clearDetectorFrame()` (uses a separate `pointCloudDetector` handle). |
+| `scene.js` | New `scene.detector` (wired into `setReverseDrift`, `rotateVDScene`, auto-rotate); split-view clone cameras + `_syncSplitCamera`; left/right `setViewport`/`setScissor` render pass. |
+| `gui.js` | The toggle in `initGuiOP`. |
+
+## 12. Building & running locally — and why that is *not* "deploying to the server"
+
+The browser does **not** load these `.js` source files directly. It loads a
+**Parcel bundle** (`events/static/js/bee/dist/bee.js`, referenced from
+`events/templates/events/event.html`). `dist/` is **git-ignored**, so the bundle is
+a local build artifact that is never committed. **Any edit to the source above has
+no effect until you rebuild the bundle.**
+
+**Build locally** (what makes your edits show up on *your* machine):
+
+```bash
+cd events/static/js/bee
+npm install                                                  # first time only
+npx parcel build --no-source-maps --public-url ./ bee.js wires-vue.js
+```
+
+This regenerates `dist/bee.js`. With the Django dev server already running
+(`python manage.py runserver`), just **hard-refresh** the browser (the ES-module
+bundle is cached) and the side panel appears. The `--public-url ./` flag keeps the
+`three.min.js` reference relative so it does not 404 (see commit *fix three.min.js
+404 on server deployment*). The canonical steps live in
+[`docs/local-setup.md`](local-setup.md) (steps 7–8).
+
+**This is distinct from deploying to the server.** Building locally only writes
+`dist/` on your workstation. Deploying means publishing the app (and a freshly
+built `dist/`) to the hosting server — a separate operation (e.g. `collectstatic`
+into `STATIC_ROOT` and syncing to the BNL host), under its own
+production `STATIC_URL`. Rebuilding locally never touches the server; conversely a
+server deploy must run its **own** Parcel build because `dist/` is not in git.
