@@ -267,10 +267,15 @@ npx parcel build --no-source-maps --public-url ./ bee.js wires-vue.js
 
 This regenerates `dist/bee.js`. With the Django dev server already running
 (`python manage.py runserver`), just **hard-refresh** the browser (the ES-module
-bundle is cached) and the side panel appears. The `--public-url ./` flag keeps the
-`three.min.js` reference relative so it does not 404 (see commit *fix three.min.js
-404 on server deployment*). The canonical steps live in
+bundle is cached) and the side panel appears. The `--public-url ./` flag makes
+Parcel emit relative asset URLs so they resolve under the app's static path on any
+deployment. The canonical steps live in
 [`docs/local-setup.md`](local-setup.md) (steps 7–8).
+
+> THREE.js is **not** part of the Parcel bundle: the main display loads it from a
+> CDN in `event.html`, and the dead-area worker fetches
+> `static/js/lib/three.min.js` directly (`deadarea.js`). So a `dist/` rebuild never
+> affects THREE, and `dist/three.min*.js` is not required.
 
 **This is distinct from deploying to the server.** Building locally only writes
 `dist/` on your workstation. Deploying means publishing the app (and a freshly
