@@ -1,8 +1,10 @@
 // DeadArea due to dead wires
 
-// Reproduce the same server-layout logic the original worker URL used, but applied
-// to three.min.js. Returns the base URL ending in 'js/' for the given deployment.
+// Returns the base URL ending in 'js/' for the given deployment.
+// Prefers the Django-injected window.BEE_STATIC_JS_URL set in event.html;
+// falls back to URL-manipulation heuristics for older deployments.
 function _staticJsUrl(rootUrl) {
+    if (window.BEE_STATIC_JS_URL) return window.BEE_STATIC_JS_URL;
     if (rootUrl.indexOf('localhost') > 1 || rootUrl.indexOf('127.0.0.1') > 1) {
         return rootUrl + 'static/js/';
     } else if (rootUrl.indexOf('twister') > 1) {

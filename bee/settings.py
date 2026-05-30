@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 import socket
 HOST_NAME = socket.gethostname()
-SITE_LOCAL = SITE_BNL = SITE_TWISTER = False
+SITE_LOCAL = SITE_BNL = SITE_TWISTER = SITE_XQIAN = False
 DATA_DIR = 'nothing'
 if HOST_NAME.startswith('lycastus'):
     SITE_BNL = True
@@ -29,6 +29,14 @@ elif HOST_NAME.startswith('twister'):
     DEBUG = False
     DATA_DIR = '../../public_html/examples'
     ALLOWED_HOSTS = ['phy.bnl.gov', 'twister.phy.bnl.gov']
+elif HOST_NAME.startswith('xqian'):
+    SITE_XQIAN = True
+    DEBUG = False
+    DATA_DIR = '/data0/xqian/bee3-data'
+    ALLOWED_HOSTS = ['xqian', 'xqian.phy.bnl.gov', '130.199.22.7', 'localhost', 'www.phy.bnl.gov', 'phy.bnl.gov']
+    FORCE_SCRIPT_NAME = '/xqian/bee'
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
 else:
     SITE_LOCAL = True
     DATA_DIR = '../wire-cell'
@@ -66,7 +74,7 @@ MIDDLEWARE = [
 ]
 
 # needed for django 4.x
-CSRF_TRUSTED_ORIGINS = ['https://www.phy.bnl.gov']
+CSRF_TRUSTED_ORIGINS = ['https://www.phy.bnl.gov', 'http://xqian', 'http://130.199.22.7']
 
 ROOT_URLCONF = 'bee.urls'
 
@@ -135,7 +143,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_ROOT = BASE_DIR / '../bee3-static'
+if SITE_XQIAN:
+    STATIC_ROOT = Path('/data0/xqian/public_html/bee/static')
+else:
+    STATIC_ROOT = BASE_DIR / '../bee3-static'
 if SITE_LOCAL:
     STATIC_URL = 'static/'
 elif SITE_BNL:
@@ -143,6 +154,8 @@ elif SITE_BNL:
     STATIC_URL = '/wire-cell/bee-static/'
 elif SITE_TWISTER:
     STATIC_URL = '/twister/static/'
+elif SITE_XQIAN:
+    STATIC_URL = '/xqian/bee/static/'
 
 # path to store uploaded filels
 if SITE_LOCAL:
@@ -151,3 +164,27 @@ else:
     MEDIA_ROOT = Path(conf.get('common', 'MEDIA_ROOT'))
 
 SITE_ID = 1
+
+if SITE_XQIAN:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'file': {
+                'class': 'logging.FileHandler',
+                'filename': '/home/xqian/wire-cell/bee3-django.log',
+            },
+        },
+        'loggers': {
+            'django.security': {
+                'handlers': ['file'],
+                'level': 'WARNING',
+                'propagate': True,
+            },
+            'django.request': {
+                'handlers': ['file'],
+                'level': 'WARNING',
+                'propagate': True,
+            },
+        },
+    }
