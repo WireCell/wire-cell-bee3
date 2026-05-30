@@ -19,6 +19,7 @@ class Scene3D {
 
         this.scene.main = new THREE.Scene();
         this.scene.slice = new THREE.Scene();
+        this.scene.detector = new THREE.Scene(); // Option B: true detector-frame panel
 
         this.rotateVDScene();
         this.setReverseDrift(this.store.config.helper.reverseDrift);
@@ -28,6 +29,7 @@ class Scene3D {
         const sx = on ? -1 : 1;
         this.scene.main.scale.x  = sx;
         this.scene.slice.scale.x = sx;
+        this.scene.detector.scale.x = sx;
     }
 
     rotateVDScene(forward=true) {
@@ -35,10 +37,12 @@ class Scene3D {
             if (forward) {
                 this.scene.main.rotation.z = Math.PI / 2;
                 this.scene.slice.rotation.z = Math.PI / 2;
+                this.scene.detector.rotation.z = Math.PI / 2;
             }
             else {
                 this.scene.main.rotation.z = 0;
                 this.scene.slice.rotation.z = 0;
+                this.scene.detector.rotation.z = 0;
             }
         }
     }
@@ -85,6 +89,40 @@ class Scene3D {
         camera.lookAt(new THREE.Vector3(0, 0, 0));
 
         this.camera.active = this.store.config.camera.ortho ? this.camera.orthoCamera : this.camera.pspCamera;
+
+        // Option B: split-view cameras. They mirror the active camera each frame but
+        // with a half-width frustum so each side-by-side panel stays undistorted.
+        this.camera.splitOrtho = this.camera.orthoCamera.clone();
+        this.camera.splitPsp = this.camera.pspCamera.clone();
+    }
+
+    // Sync the split-view camera to the active camera, fitting a vw x vh viewport
+    // (fullW x fullH is the un-split viewport) without distortion or cropping.
+    _syncSplitCamera(vw, vh, fullW, fullH) {
+        let src = this.camera.active;
+        let isOrtho = this.store.config.camera.ortho;
+        let cam = isOrtho ? this.camera.splitOrtho : this.camera.splitPsp;
+        let zoomScale = Math.min(vw / fullW, vh / fullH);
+        cam.position.copy(src.position);
+        cam.quaternion.copy(src.quaternion);
+        cam.up.copy(src.up);
+        cam.near = src.near;
+        cam.far = src.far;
+        cam.zoom = src.zoom * zoomScale;
+        if (isOrtho) {
+            let cx = (src.left + src.right) * 0.5;
+            let halfW = (src.top - src.bottom) * (vw / vh) * 0.5;
+            cam.top = src.top;
+            cam.bottom = src.bottom;
+            cam.left = cx - halfW;
+            cam.right = cx + halfW;
+        }
+        else {
+            cam.fov = src.fov;
+            cam.aspect = vw / vh;
+        }
+        cam.updateProjectionMatrix();
+        return cam;
     }
 
     initRenderer() {
@@ -121,10 +159,12 @@ class Scene3D {
                     let newPos = Date.now() * 0.0001;
                     self.scene.main.rotation.y = newPos;
                     self.scene.slice.rotation.y = newPos;
+                    self.scene.detector.rotation.y = newPos;
                 }
                 else {
                     self.scene.main.rotation.y = 0;
                     self.scene.slice.rotation.y = 0;
+                    self.scene.detector.rotation.y = 0;
                 }
             }
             // In XR mode, setAnimationLoop drives the frame loop
@@ -142,6 +182,27 @@ class Scene3D {
             let SCREEN_H = window.innerHeight;
             let left, bottom, width, height;
             let renderer = self.renderer;
+
+            // Option B: side-by-side reco (left) vs true detector frame (right)
+            if (this.store.config.op.sidePanel) {
+                let halfW = SCREEN_W / 2;
+                let cam = self._syncSplitCamera(halfW, SCREEN_H, SCREEN_W, SCREEN_H);
+
+                renderer.setViewport(0, 0, halfW, SCREEN_H);
+                renderer.setScissor(0, 0, halfW, SCREEN_H);
+                renderer.setScissorTest(true);
+                renderer.clear();
+                renderer.render(self.scene.main, cam);
+                renderer.clearDepth();
+                renderer.render(self.scene.slice, cam);
+
+                renderer.setViewport(halfW, 0, halfW, SCREEN_H);
+                renderer.setScissor(halfW, 0, halfW, SCREEN_H);
+                renderer.setScissorTest(true);
+                renderer.clear();
+                renderer.render(self.scene.detector, cam);
+                return;
+            }
 
             renderer.setViewport(0, 0, SCREEN_W, SCREEN_H);
             renderer.setScissor(0, 0, SCREEN_W, SCREEN_H);

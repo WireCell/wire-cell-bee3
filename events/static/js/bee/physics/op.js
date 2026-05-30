@@ -65,165 +65,37 @@ class OP {
         let members = this.groupMembers(currentFlash);
         let t = this.data.op_t[currentFlash];
         let peTotal = this.data.op_peTotal[currentFlash];
-        let pes = this.combinedPes(members, 'op_pes');
-        let pes_pred = this.combinedPes(members, 'op_pes_pred');
         let driftV = this.store.experiment.tpc.driftVelocity;
-        // console.log(currentFlash, t, peTotal, driftV * t);
 
         if(this.group_op != null) { this.bee.scene3d.scene.main.remove(this.group_op) }
         this.group_op = new THREE.Group();
 
-        for (let iTPC=0; iTPC<this.store.experiment.nTPC(); iTPC++) {
-            // console.log(this.store.experiment.halfXYZ(iTPC), this.store.experiment.center(iTPC), this.store.experiment.driftDir(iTPC));
-            let boxhelper = new THREE.Object3D;
+        // reco frame: boxes/PMTs shifted along drift by driftV*t*driftDir (current behavior)
+        let last = this.buildGroup(this.group_op, false);
+        this.bee.scene3d.scene.main.add(this.group_op);
 
-            let exp = this.store.experiment;
-            let [halfx, halfy, halfz] = this.store.experiment.halfXYZ(iTPC);
-            let opBox = new THREE.Mesh(
-                new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
-                new THREE.MeshBasicMaterial( {
-                    color: 0x96f97b,
-                    transparent: true,
-                    depthWrite: true,
-                    opacity: 0.5,
-            }));
-            let box = new THREE.BoxHelper(opBox);
-            box.material.color.setHex(0xff0000);
-            boxhelper.add(box);
-            let sx = exp.center(iTPC)[0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted x location
-            boxhelper.position.set(...exp.toLocalXYZ(sx, exp.center(iTPC)[1], exp.center(iTPC)[2]));
-            this.group_op.add(boxhelper);
-    
-            let location = this.store.experiment.op.location;
-            let nDet = this.store.experiment.op.nDet;
-            if (this.store.experiment.name == "sbnd") {
-                for (let i=0; i<nDet; i++) {
-                    if (this.store.experiment.opTPC(i) != iTPC) continue;
-                    let detType = location[i][3] == undefined ? 1 : location[i][3];
-                    let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
-                    if (detType == 1) {
-                        let radius = 10.16;
-                        let segments = 32; //<-- Increase or decrease for more resolution
-            
-                        let circleGeometry = new THREE.CircleGeometry( radius, segments );
-                        let circle = new THREE.LineSegments(
-                            new THREE.EdgesGeometry(circleGeometry), 
-                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
-                        );
-                        circle.rotation.y = Math.PI / 2;
-                        circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
-                        this.group_op.add(circle);
-                    }
-                    else if (detType == 2) {
-                        let xara = new THREE.LineSegments(
-                            new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)), 
-                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
-                        );
-                        xara.rotation.y = Math.PI / 2;
-                        xara.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
-                        this.group_op.add(xara);
-                    }
-        
-                    if (this.store.config.op.showPMTClone) {
-                        let circle2 =circle.clone();
-                        circle2.rotation.x = Math.PI / 2;
-                        circle2.rotation.y = 0;
-                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
-                        circle2.position.y = boxhelper.position.y + halfy;
-                        this.group_op.add(circle2);
-                    }
-                }
-            }
-            else { // draw uboone pmts
-                for (let i=0; i<nDet; i++) {
-                    if (this.store.experiment.opTPC(i) != iTPC) continue;
-                    let radius = 10;
-                    let segments = 32; //<-- Increase or decrease for more resolution I guess
-        
-                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
-                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
-                        color: 0xbbbbbb,
-                        opacity: 0.01,
-                        side: THREE.DoubleSide
-                    }));
-                    circle.rotation.y = Math.PI / 2;
-                    let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
-                    circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
-                    this.group_op.add(circle);
-        
-                    if (this.store.config.op.showPMTClone) {
-                        let circle2 =circle.clone();
-                        circle2.rotation.x = Math.PI / 2;
-                        circle2.rotation.y = 0;
-                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
-                        circle2.position.y = boxhelper.position.y + halfy;
-                        this.group_op.add(circle2);
-                    }
-                }
-            }
-
-    
-            for (let i=0; i<nDet; i++) {
-                if (this.store.experiment.opTPC(i) != iTPC) continue;
-                if (pes[i] > 0.01 ) {
-                    let radius = Math.sqrt(pes[i]) * this.store.experiment.op.peScaling;
-                    let segments = 32; //<-- Increase or decrease for more resolution I guess
-    
-                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
-                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
-                        color: 0xff0000,
-                        opacity: 0.2,
-                        side: THREE.DoubleSide
-                    }));
-                    circle.rotation.y = Math.PI / 2;
-                    let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
-                    circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
-                    this.group_op.add(circle);
-    
-                    if (this.store.config.op.showPMTClone) {
-                        let circle2 =circle.clone();
-                        circle2.rotation.x = Math.PI / 2;
-                        circle2.rotation.y = 0;
-                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
-                        circle2.position.y = boxhelper.position.y + halfy;
-                        this.group_op.add(circle2);
-                    }
-                }
-    
-                if (this.store.config.op.showPred) {
-                    try {
-                        if (pes_pred[i] > 0.01 ) {
-                            let radius_pred = Math.sqrt(pes_pred[i]) * this.store.experiment.op.peScaling;
-                            let segments_pred = 32;
-                            let circleGeometry_pred = new THREE.CircleGeometry( radius_pred, segments_pred );
-                            let circle_pred = new THREE.Mesh(circleGeometry_pred, new THREE.MeshBasicMaterial({
-                                color: 0x15b01a,
-                                opacity: 0.2,
-                                side: THREE.DoubleSide
-                            }));
-                            circle_pred.rotation.y = Math.PI / 2;
-                            let sox = location[i][0]+driftV*t*this.store.experiment.driftDir(iTPC); // shifted op x location
-                            circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
-                            this.group_op.add(circle_pred);
-                        }
-                    }
-                    catch(err) {
-                        // console.log(err);
-                    }
-                }
-    
-            }
+        // Option B: detector frame -- boxes/PMTs fixed at their real location (no shift)
+        if (this.store.config.op.sidePanel) {
+            if (this.group_op_detector != null) { this.bee.scene3d.scene.detector.remove(this.group_op_detector) }
+            this.group_op_detector = new THREE.Group();
+            this.buildGroup(this.group_op_detector, true);
+            this.bee.scene3d.scene.detector.add(this.group_op_detector);
+        }
+        else if (this.group_op_detector != null) {
+            this.bee.scene3d.scene.detector.remove(this.group_op_detector);
+            this.group_op_detector = null;
         }
 
-
         if (this.store.config.op.matchTiming) {
-            this.bee.current_sst.drawInsideSlice(boxhelper.position.x-halfx, 2*halfx);
+            this.bee.current_sst.drawInsideSlice(last.boxhelper.position.x-last.halfx, 2*last.halfx);
         }
         else {
             this.bee.current_sst.drawInsideThreeFrames();
         }
 
-        this.bee.scene3d.scene.main.add(this.group_op);
+        // detector-frame charge: T0-corrected (the dual of the box shift) when panel is on
+        if (this.store.config.op.sidePanel) { this.bee.current_sst.drawDetectorFrame(); }
+        else { this.bee.current_sst.clearDetectorFrame(); }
 
         if(this.store.config.helper.showSCB) {
             this.bee.scene3d.drawSpaceChargeBoundary(driftV*t);
@@ -253,6 +125,166 @@ class OP {
             )
         }
 
+    }
+
+    // Build the red TPC boxes + PMT/X-Arapuca circles for the current flash into
+    // `group`. detectorFrame=false reproduces the reco frame (drift shift applied);
+    // detectorFrame=true draws everything at its real fixed location (shift = 0).
+    // Returns {boxhelper, halfx} of the last TPC (used by the matchTiming slice).
+    buildGroup(group, detectorFrame) {
+        let currentFlash = this.currentFlash;
+        let members = this.groupMembers(currentFlash);
+        let t = this.data.op_t[currentFlash];
+        let pes = this.combinedPes(members, 'op_pes');
+        let pes_pred = this.combinedPes(members, 'op_pes_pred');
+        let driftV = this.store.experiment.tpc.driftVelocity;
+        let lastBoxhelper = null, lastHalfx = 0;
+
+        for (let iTPC=0; iTPC<this.store.experiment.nTPC(); iTPC++) {
+            // console.log(this.store.experiment.halfXYZ(iTPC), this.store.experiment.center(iTPC), this.store.experiment.driftDir(iTPC));
+            let boxhelper = new THREE.Object3D;
+
+            let exp = this.store.experiment;
+            let [halfx, halfy, halfz] = this.store.experiment.halfXYZ(iTPC);
+            let shiftX = detectorFrame ? 0 : driftV*t*exp.driftDir(iTPC); // drift shift (0 in detector frame)
+            let opBox = new THREE.Mesh(
+                new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
+                new THREE.MeshBasicMaterial( {
+                    color: 0x96f97b,
+                    transparent: true,
+                    depthWrite: true,
+                    opacity: 0.5,
+            }));
+            let box = new THREE.BoxHelper(opBox);
+            box.material.color.setHex(0xff0000);
+            boxhelper.add(box);
+            let sx = exp.center(iTPC)[0]+shiftX; // shifted x location
+            boxhelper.position.set(...exp.toLocalXYZ(sx, exp.center(iTPC)[1], exp.center(iTPC)[2]));
+            group.add(boxhelper);
+            lastBoxhelper = boxhelper; lastHalfx = halfx;
+
+            let location = this.store.experiment.op.location;
+            let nDet = this.store.experiment.op.nDet;
+            if (this.store.experiment.name == "sbnd") {
+                for (let i=0; i<nDet; i++) {
+                    if (this.store.experiment.opTPC(i) != iTPC) continue;
+                    let detType = location[i][3] == undefined ? 1 : location[i][3];
+                    let sox = location[i][0]+shiftX; // shifted op x location
+                    if (detType == 1) {
+                        let radius = 10.16;
+                        let segments = 32; //<-- Increase or decrease for more resolution
+
+                        let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                        let circle = new THREE.LineSegments(
+                            new THREE.EdgesGeometry(circleGeometry),
+                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
+                        );
+                        circle.rotation.y = Math.PI / 2;
+                        circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                        group.add(circle);
+                    }
+                    else if (detType == 2) {
+                        let xara = new THREE.LineSegments(
+                            new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)),
+                            new THREE.LineBasicMaterial({color: 0xbbbbbb})
+                        );
+                        xara.rotation.y = Math.PI / 2;
+                        xara.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                        group.add(xara);
+                    }
+
+                    if (this.store.config.op.showPMTClone) {
+                        let circle2 = circle.clone();
+                        circle2.rotation.x = Math.PI / 2;
+                        circle2.rotation.y = 0;
+                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
+                        circle2.position.y = boxhelper.position.y + halfy;
+                        group.add(circle2);
+                    }
+                }
+            }
+            else { // draw uboone pmts
+                for (let i=0; i<nDet; i++) {
+                    if (this.store.experiment.opTPC(i) != iTPC) continue;
+                    let radius = 10;
+                    let segments = 32; //<-- Increase or decrease for more resolution I guess
+
+                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
+                        color: 0xbbbbbb,
+                        opacity: 0.01,
+                        side: THREE.DoubleSide
+                    }));
+                    circle.rotation.y = Math.PI / 2;
+                    let sox = location[i][0]+shiftX; // shifted op x location
+                    circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                    group.add(circle);
+
+                    if (this.store.config.op.showPMTClone) {
+                        let circle2 = circle.clone();
+                        circle2.rotation.x = Math.PI / 2;
+                        circle2.rotation.y = 0;
+                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
+                        circle2.position.y = boxhelper.position.y + halfy;
+                        group.add(circle2);
+                    }
+                }
+            }
+
+
+            for (let i=0; i<nDet; i++) {
+                if (this.store.experiment.opTPC(i) != iTPC) continue;
+                if (pes[i] > 0.01 ) {
+                    let radius = Math.sqrt(pes[i]) * this.store.experiment.op.peScaling;
+                    let segments = 32; //<-- Increase or decrease for more resolution I guess
+
+                    let circleGeometry = new THREE.CircleGeometry( radius, segments );
+                    let circle = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({
+                        color: 0xff0000,
+                        opacity: 0.2,
+                        side: THREE.DoubleSide
+                    }));
+                    circle.rotation.y = Math.PI / 2;
+                    let sox = location[i][0]+shiftX; // shifted op x location
+                    circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
+                    group.add(circle);
+
+                    if (this.store.config.op.showPMTClone) {
+                        let circle2 = circle.clone();
+                        circle2.rotation.x = Math.PI / 2;
+                        circle2.rotation.y = 0;
+                        circle2.position.x = boxhelper.position.x + exp.toLocalXYZ(...location[i])[1];
+                        circle2.position.y = boxhelper.position.y + halfy;
+                        group.add(circle2);
+                    }
+                }
+
+                if (this.store.config.op.showPred) {
+                    try {
+                        if (pes_pred[i] > 0.01 ) {
+                            let radius_pred = Math.sqrt(pes_pred[i]) * this.store.experiment.op.peScaling;
+                            let segments_pred = 32;
+                            let circleGeometry_pred = new THREE.CircleGeometry( radius_pred, segments_pred );
+                            let circle_pred = new THREE.Mesh(circleGeometry_pred, new THREE.MeshBasicMaterial({
+                                color: 0x15b01a,
+                                opacity: 0.2,
+                                side: THREE.DoubleSide
+                            }));
+                            circle_pred.rotation.y = Math.PI / 2;
+                            let sox = location[i][0]+shiftX; // shifted op x location
+                            circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
+                            group.add(circle_pred);
+                        }
+                    }
+                    catch(err) {
+                        // console.log(err);
+                    }
+                }
+
+            }
+        }
+
+        return { boxhelper: lastBoxhelper, halfx: lastHalfx };
     }
 
     enableDrawFlash() {
@@ -322,7 +354,7 @@ class OP {
         )
         if (n <= this.data.op_t.length) { this.drawMachingCluster() }
         else { this.store.dom.el_statusbar.html('No matching flash found inside beam window') }
-        
+
     }
 
     nextMatchingNUMI() {
@@ -354,6 +386,11 @@ class OP {
         else {
             this.bee.scene3d.scene.main.remove(this.group_op);
             this.group_op = null;
+            if (this.group_op_detector != null) {
+                this.bee.scene3d.scene.detector.remove(this.group_op_detector);
+                this.group_op_detector = null;
+            }
+            this.bee.current_sst.clearDetectorFrame();
         }
     }
 

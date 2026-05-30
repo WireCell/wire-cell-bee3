@@ -82,7 +82,7 @@ class SST {
         this.drawInsideThreeFrames(false);
     }
 
-    drawInsideBox(xmin, xmax, ymin, ymax, zmin, zmax, randomClusterColor = false) {
+    drawInsideBox(xmin, xmax, ymin, ymax, zmin, zmax, randomClusterColor = false, targetScene = null, shiftFn = null) {
 
         // if(this.boxhelper != null) {
         //     this.scene.remove(this.boxhelper);
@@ -147,9 +147,11 @@ class SST {
                 }
 
             }
-            // add position
+            // add position (optionally T0-shifted in global x for the detector frame)
+            let gx = this.data.x[ind], gy = this.data.y[ind], gz = this.data.z[ind];
+            if (shiftFn) { gx = shiftFn(gx, gy, gz); }
             [positions[size_actual * 3], positions[size_actual * 3 + 1], positions[size_actual * 3 + 2]] =
-                this.store.experiment.toLocalXYZ(this.data.x[ind], this.data.y[ind], this.data.z[ind]);
+                this.store.experiment.toLocalXYZ(gx, gy, gz);
 
             // add color
             let color = new THREE.Color();
@@ -196,10 +198,35 @@ class SST {
             sizeAttenuation: false
         });
 
-        if (this.pointCloud != null) { this.scene.remove(this.pointCloud) }
-        this.pointCloud = new THREE.Points(geometry, material);
-        this.scene.add(this.pointCloud);
+        let scene = targetScene || this.scene;
+        let handle = targetScene ? 'pointCloudDetector' : 'pointCloud';
+        if (this[handle] != null) { scene.remove(this[handle]) }
+        this[handle] = new THREE.Points(geometry, material);
+        scene.add(this[handle]);
 
+    }
+
+    // Option B: draw the clusters into the detector-frame scene, T0-corrected by the
+    // exact dual of the op.js box shift (boxes fixed, charge moves). Each point is
+    // shifted in global x by -driftV*t*driftDir(tpcOf(point)) so it lands where its
+    // (now-fixed) box sits -- correct for SBND / ProtoDUNE-HD / VD by construction.
+    drawDetectorFrame() {
+        let exp = this.store.experiment;
+        let op = this.bee.op;
+        let scene = this.bee.scene3d.scene.detector;
+        if (op == null || op.data == null || op.data.op_t == null) {
+            if (this.pointCloudDetector != null) { scene.remove(this.pointCloudDetector); this.pointCloudDetector = null; }
+            return;
+        }
+        let t = op.data.op_t[op.currentFlash];
+        let driftV = exp.tpc.driftVelocity;
+        let shiftFn = (gx, gy, gz) => gx - driftV * t * exp.driftDir(exp.tpcOf(gx, gy, gz));
+        this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);
+    }
+
+    clearDetectorFrame() {
+        let scene = this.bee.scene3d.scene.detector;
+        if (this.pointCloudDetector != null) { scene.remove(this.pointCloudDetector); this.pointCloudDetector = null; }
     }
 
     drawInsideThreeFrames(randomClusterColor = false) {

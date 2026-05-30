@@ -42,7 +42,8 @@ store.config = {
         showMatchingCluster: false,
         showPred: true,
         showNonMatchingCluster: false,
-        tpc_cluster_id: -1
+        tpc_cluster_id: -1,
+        sidePanel: false   // Option B: side-by-side "true detector frame" panel
     },
     slice: {
         enabled: false,
