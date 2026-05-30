@@ -150,6 +150,20 @@ The panel (top-right) is divided into folders:
 | **Time Slice** | Semi-transparent slice plane along the drift axis |
 | **Camera** | Ortho/perspective, multi-view, 2D-view dropdown, **Origin X/Y/Z** (rotation pivot), fullscreen |
 
+### Multi-view insets (Camera folder)
+
+**Camera → multi-view** overlays three small orthographic insets on the main view,
+drawn each frame by the `scene.js` render loop with `setViewport`/`setScissor`:
+
+- **front** — bottom-left corner.
+- **side** and **top** — stacked vertically in the **top-right** corner, each
+  `0.25·W × 0.25·H`, positioned left of the (~270 px) dat.GUI panel so the controls
+  never cover them.
+
+Positions are recomputed from the live canvas size each frame, so they track window
+resizing. (WebGL viewport coordinates have their origin at the bottom-left, which is
+why the inset `bottom` values are measured up from the bottom of the canvas.)
+
 ### Origin X/Y/Z controls (Camera folder)
 
 **Camera → Origin X (cm) / Origin Y (cm) / Origin Z (cm)** set the rotation/orbit pivot of the 3D display.  Coordinates are in **detector global cm** (the LArSoft/reco frame), matching the `(x, y, z)` readout shown in the status bar when you single-click a hit.

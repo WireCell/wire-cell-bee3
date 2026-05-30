@@ -222,16 +222,16 @@ class Scene3D {
                 self.camera.frontCamera.updateProjectionMatrix();
                 renderer.render(self.scene.main, self.camera.frontCamera);
 
-                // side camera
-                width = SCREEN_W * 0.3; height = SCREEN_H * 0.3; left = SCREEN_W - 650 - 250; bottom = SCREEN_H - 200;
+                // side camera (top-right corner, upper of the stacked pair, left of the ~270px dat.GUI panel)
+                width = SCREEN_W * 0.25; height = SCREEN_H * 0.25; left = SCREEN_W - 270 - width; bottom = SCREEN_H - height - 10;
                 renderer.setViewport(left, bottom, width, height);
                 renderer.setScissor(left, bottom, width, height);
                 renderer.setScissorTest(true);
                 self.camera.sideCamera.updateProjectionMatrix();
                 renderer.render(self.scene.main, self.camera.sideCamera);
 
-                // top camera
-                width = SCREEN_W * 0.3; height = SCREEN_H * 0.3; left = SCREEN_W - 400 - 250; bottom = SCREEN_H - 200;
+                // top camera (top-right corner, stacked just below the side inset)
+                width = SCREEN_W * 0.25; height = SCREEN_H * 0.25; left = SCREEN_W - 270 - width; bottom = SCREEN_H - 2*height - 20;
                 renderer.setViewport(left, bottom, width, height);
                 renderer.setScissor(left, bottom, width, height);
                 renderer.setScissorTest(true);
