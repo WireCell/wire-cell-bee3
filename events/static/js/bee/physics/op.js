@@ -19,12 +19,54 @@ class OP {
             });
     }
 
+    // Indices of all flashes in the same ±80 ns group as `idx`.  When the op
+    // JSON has no op_flash_group (older files / single-flash case), the group
+    // is just the flash itself, so all behavior below stays backward compatible.
+    groupMembers(idx) {
+        let g = this.data.op_flash_group;
+        if (!g) return [idx];
+        let members = [];
+        for (let i = 0; i < g.length; i++) { if (g[i] === g[idx]) members.push(i); }
+        return members;
+    }
+
+    // Group id of a flash; the flash's own index when op_flash_group is absent,
+    // so matched-flash stepping behaves exactly as before in that case.
+    flashGroup(idx) {
+        return this.data.op_flash_group ? this.data.op_flash_group[idx] : idx;
+    }
+
+    // Union of matched cluster ids over the current flash's group.
+    currentMatchingIds() {
+        let ids = [];
+        for (let i of this.groupMembers(this.currentFlash)) {
+            let cids = this.data.op_cluster_ids[i];
+            if (cids) { for (let c of cids) { if (!ids.includes(c)) ids.push(c); } }
+        }
+        return ids;
+    }
+
+    // Element-wise sum of a per-channel array (op_pes / op_pes_pred) over the
+    // group's flashes.  Channels are disjoint per TPC and every flash carries a
+    // full per-channel vector, so the sum is the union across both TPC sides.
+    combinedPes(members, key) {
+        if (members.length === 1) return this.data[key][members[0]];
+        let out = [];
+        for (let i of members) {
+            let arr = this.data[key][i];
+            if (!arr) continue;
+            for (let ch = 0; ch < arr.length; ch++) { out[ch] = (out[ch] || 0) + arr[ch]; }
+        }
+        return out;
+    }
+
     draw() {
         let currentFlash = this.currentFlash;
+        let members = this.groupMembers(currentFlash);
         let t = this.data.op_t[currentFlash];
         let peTotal = this.data.op_peTotal[currentFlash];
-        let pes = this.data.op_pes[currentFlash];
-        let pes_pred = this.data.op_pes_pred[currentFlash];
+        let pes = this.combinedPes(members, 'op_pes');
+        let pes_pred = this.combinedPes(members, 'op_pes_pred');
         let driftV = this.store.experiment.tpc.driftVelocity;
         // console.log(currentFlash, t, peTotal, driftV * t);
 
@@ -187,8 +229,13 @@ class OP {
             this.bee.scene3d.drawSpaceChargeBoundary(driftV*t);
         }
 
-        // add status bar text
-        this.store.dom.el_statusbar.html(`#${this.currentFlash}: (${t} us, ${peTotal} pe)`);
+        // add status bar text: one line per flash in the group, TPC-labeled
+        // when the op JSON carries an `apa` array.
+        let apa = this.data.apa;
+        let lines = members.map(i =>
+            `#${i}: (${this.data.op_t[i]} us, ${this.data.op_peTotal[i]} pe)` +
+            (apa ? ` TPC${apa[i]}` : ''));
+        this.store.dom.el_statusbar.html(lines.join('<br/>'));
         if (this.data.op_l1_t) {
             let l1size = this.data.op_l1_t[this.currentFlash].length;
             if (l1size>1) {
@@ -202,7 +249,7 @@ class OP {
         if (this.data.op_cluster_ids) {
             this.store.dom.el_statusbar.html(
                 this.store.dom.el_statusbar.html() +
-               '<br/>matching: ' + this.data.op_cluster_ids[this.currentFlash]
+               '<br/>matching: ' + this.currentMatchingIds()
             )
         }
 
@@ -230,23 +277,32 @@ class OP {
     }
 
     nextMatching() {
+        let startGroup = this.flashGroup(this.currentFlash);
+        let n = 0;
         do {
             if (this.currentFlash < this.data.op_t.length - 1) { this.currentFlash += 1 }
             else { this.currentFlash = 0 }
-        } while (this.data.op_cluster_ids[this.currentFlash].length == 0)
+            if (++n > this.data.op_t.length) break;
+        } while (this.data.op_cluster_ids[this.currentFlash].length == 0
+                 || this.flashGroup(this.currentFlash) === startGroup)
         this.drawMachingCluster();
     }
 
     prevMatching() {
         // this.enableMachingCluster();
+        let startGroup = this.flashGroup(this.currentFlash);
+        let n = 0;
         do {
             if (this.currentFlash > 0) { this.currentFlash -= 1 }
             else { this.currentFlash = this.data.op_t.length - 1 }
-        } while (this.data.op_cluster_ids[this.currentFlash].length == 0)
+            if (++n > this.data.op_t.length) break;
+        } while (this.data.op_cluster_ids[this.currentFlash].length == 0
+                 || this.flashGroup(this.currentFlash) === startGroup)
         this.drawMachingCluster();
     }
 
     nextMatchingBeam() {
+        let startGroup = this.flashGroup(this.currentFlash);
         let n = 0;
         do {
             if (this.currentFlash < this.data.op_t.length - 1) {
@@ -260,6 +316,7 @@ class OP {
             if (n > this.data.op_t.length) break;
         } while (
             this.data.op_cluster_ids[this.currentFlash].length == 0
+            || this.flashGroup(this.currentFlash) === startGroup
             || this.data.op_t[this.currentFlash] < this.store.experiment.op.beamTimeMin
             || this.data.op_t[this.currentFlash] > this.store.experiment.op.beamTimeMax
         )
@@ -269,6 +326,7 @@ class OP {
     }
 
     nextMatchingNUMI() {
+        let startGroup = this.flashGroup(this.currentFlash);
         let n = 0;
         do {
             if (this.currentFlash < this.data.op_t.length - 1) {
@@ -282,6 +340,7 @@ class OP {
             if (n > this.data.op_t.length) break;
         } while (
             this.data.op_cluster_ids[this.currentFlash].length == 0
+            || this.flashGroup(this.currentFlash) === startGroup
             || this.data.op_t[this.currentFlash] < this.store.experiment.op.numiTimeMin
             || this.data.op_t[this.currentFlash] > this.store.experiment.op.numiTimeMax
         )

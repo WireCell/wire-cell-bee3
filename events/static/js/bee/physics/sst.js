@@ -132,7 +132,9 @@ class SST {
             else if (config.op.showMatchingCluster) {
                 try {
                     let op = this.bee.op;
-                    let op_cluster_ids = op.data.op_cluster_ids[op.currentFlash];
+                    // Union of the matched cluster ids over the current flash's
+                    // ±80 ns group (single flash when op_flash_group is absent).
+                    let op_cluster_ids = op.currentMatchingIds();
                     if (!op_cluster_ids.includes(this.data.cluster_id[ind])) {
                         continue;
                     }
