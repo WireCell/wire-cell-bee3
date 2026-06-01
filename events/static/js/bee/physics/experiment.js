@@ -880,6 +880,7 @@ class SBND extends Experiment {
 
     constructor() {
         super('sbnd');
+        this.tpc.driftVelocity = 0.1563; // cm/us — matches toolkit drift_speed 1.563 mm/us (cfg/.../sbnd/clus.jsonnet)
         // Geometry aligned to GDML v02_06 wire-overlap region.
         // X: ±202.05 cm = collection (W) plane; inner edge ±1.5 cm = data CPA face
         // (~3 cm gap; matches measured DENT-driven gap, not the ±0.45 cm sim value).
