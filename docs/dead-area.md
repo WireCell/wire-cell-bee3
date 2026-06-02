@@ -34,9 +34,22 @@ Flow:
    `Float32Array` of vertex positions and normals, and creates one `THREE.Mesh` per file.
    All meshes are added to a shared `THREE.Group` attached to the main Three.js scene.
 
-4. **Rendering** — meshes use `THREE.MeshBasicMaterial` (grey `0x888888`, double-sided,
-   transparent). The opacity slider in the "Dead Area" GUI panel applies to all meshes
-   simultaneously.
+4. **Rendering** — meshes use `THREE.MeshBasicMaterial` (double-sided, transparent).
+   The opacity slider in the "Dead Area" GUI panel applies to all meshes simultaneously.
+
+### Color scheme for multi-anode detectors
+
+For detectors with multiple anodes (e.g., SBND with two TPCs), dead areas from different
+anodes are rendered in distinct colors to aid visual differentiation:
+
+- **apa0 / tpc0** — Grey (`0x888888`)
+- **apa1 / tpc1** — Red (`0xFF0000`)
+- **Other anodes** — Grey (default)
+
+The color is determined by the dead-area filename label (the suffix after `channel-deadarea-`).
+If the label contains `apa0` or `tpc0`, the mesh renders grey; if it contains `apa1` or
+`tpc1`, the mesh renders red. This coloring is applied in `deadarea.js` (line 156) and
+provides immediate visual feedback about which anode face a dead region belongs to.
 
 ### Anode-plane placement
 
