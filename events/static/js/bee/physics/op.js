@@ -46,6 +46,28 @@ class OP {
         return ids;
     }
 
+    // Map cluster_id -> TPC index, taken from the optical match (authoritative,
+    // position-independent): a flash is reconstructed per TPC side, so the `apa`
+    // of the flash a cluster matched to IS that cluster's true TPC -- even when an
+    // unknown T0 has slid the reconstructed charge across the cathode into the
+    // other TPC's box. Used by the detector frame to pick the drift direction so a
+    // displaced TPC0 cluster is not mis-corrected as TPC1. Returns null when the op
+    // JSON lacks `apa`/`op_cluster_ids` (older files), so the caller can fall back
+    // to position-based tpcOf().
+    clusterTpcMap() {
+        let cids = this.data.op_cluster_ids;
+        let apa = this.data.apa;
+        if (!cids || !apa) return null;
+        let map = new Map();
+        for (let i = 0; i < cids.length; i++) {
+            if (!cids[i] || apa[i] == null) continue;
+            let tpc = parseInt(apa[i]);
+            if (Number.isNaN(tpc)) continue;
+            for (let c of cids[i]) { map.set(Number(c), tpc); }
+        }
+        return map;
+    }
+
     // Element-wise sum of a per-channel array (op_pes / op_pes_pred) over the
     // group's flashes.  Channels are disjoint per TPC and every flash carries a
     // full per-channel vector, so the sum is the union across both TPC sides.

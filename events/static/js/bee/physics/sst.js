@@ -149,7 +149,7 @@ class SST {
             }
             // add position (optionally T0-shifted in global x for the detector frame)
             let gx = this.data.x[ind], gy = this.data.y[ind], gz = this.data.z[ind];
-            if (shiftFn) { gx = shiftFn(gx, gy, gz); }
+            if (shiftFn) { gx = shiftFn(gx, gy, gz, this.data.cluster_id[ind]); }
             [positions[size_actual * 3], positions[size_actual * 3 + 1], positions[size_actual * 3 + 2]] =
                 this.store.experiment.toLocalXYZ(gx, gy, gz);
 
@@ -208,8 +208,16 @@ class SST {
 
     // Option B: draw the clusters into the detector-frame scene, T0-corrected by the
     // exact dual of the op.js box shift (boxes fixed, charge moves). Each point is
-    // shifted in global x by -driftV*t*driftDir(tpcOf(point)) so it lands where its
-    // (now-fixed) box sits -- correct for SBND / ProtoDUNE-HD / VD by construction.
+    // shifted in global x by -driftV*t*driftDir(tpc) so it lands where its
+    // (now-fixed) box sits.
+    //
+    // The drift direction needs the cluster's TRUE TPC. Position alone cannot supply
+    // it: an unknown T0 can slide a TPC0 cluster's reconstructed x across the cathode
+    // into TPC1's box, and x is both the only axis that separates the SBND TPCs and
+    // the only axis the T0 corrupts -- so tpcOf(point) would mis-read it as TPC1 and
+    // "correct" it the wrong way. We therefore prefer the optical match: the `apa` of
+    // the flash a cluster matched to is its true TPC (authoritative, position-free).
+    // tpcOf() remains the fallback for charge not matched to any flash.
     drawDetectorFrame() {
         let exp = this.store.experiment;
         let op = this.bee.op;
@@ -220,7 +228,13 @@ class SST {
         }
         let t = op.data.op_t[op.currentFlash];
         let driftV = exp.tpc.driftVelocity;
-        let shiftFn = (gx, gy, gz) => gx - driftV * t * exp.driftDir(exp.tpcOf(gx, gy, gz));
+        let tpcMap = op.clusterTpcMap();
+        let shiftFn = (gx, gy, gz, clusterId) => {
+            let tpc = (tpcMap && tpcMap.has(Number(clusterId)))
+                ? tpcMap.get(Number(clusterId))
+                : exp.tpcOf(gx, gy, gz);
+            return gx - driftV * t * exp.driftDir(tpc);
+        };
         this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);
     }
 

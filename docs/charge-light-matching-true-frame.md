@@ -69,12 +69,12 @@ detectors share the **same drift convention in Bee data coordinates**: drift alo
 
 | Detector | class / `nTPC()` | TPC x-ranges (cm) | Cathode gap (x) | `driftDir(i)` |
 |---|---|---|---|---|
-| SBND | `SBND` / 2 | `[-202.05,-1.5]`, `[1.5,202.05]` | `[-1.5, 1.5]` | 0:−1, 1:+1 |
-| ProtoDUNE-HD | `ProtoDUNEHD` / 4 | left `[-352.95,-1.00]`, right `[0.80,352.75]` (×2 Z-layers) | ≈ `[-1.0, 0.8]` | 0,2:−1; 1,3:+1 |
+| SBND | `SBND` / 2 | `[-202.05,-1.5]`, `[1.5,202.05]` | `[-1.5, 1.5]` | 0:+1, 1:−1 |
+| ProtoDUNE-HD | `ProtoDUNEHD` / 4 | left `[-352.95,-1.00]`, right `[0.80,352.75]` (×2 Z-layers) | ≈ `[-1.0, 0.8]` | 0,2:+1; 1,3:−1 |
 | ProtoDUNE-VD | `ProtoDUNEVD` / 8 | left `[-313.03,-3.03]`, right `[3.03,313.03]` (×Y,Z subdivisions) | `[-3.03, 3.03]` | parity ±1 |
 
-Base `driftDir(i) = ((i%2)-0.5)*-2` → ±1 (`experiment.js:51`). In every case the
-sign lines up with the side of the cathode: **left of x≈0 → −1, right → +1**.
+Base `driftDir(i) = ((i%2)-0.5)*-2` → ±1 (`experiment.js:51`): index 0 → **+1**,
+index 1 → **−1**. The even/left TPC (x<0) gets +1, the odd/right TPC (x>0) gets −1.
 
 ### The ProtoDUNE-VD subtlety (do not over-engineer this)
 
@@ -242,7 +242,7 @@ Changed files (front-end ES-module source under `events/static/js/bee/`):
 
 | File | Change |
 |---|---|
-| `physics/experiment.js` | `tpcOf(gx,gy,gz)` — maps a point to its containing TPC so the per-point shift is the exact dual of the `op.js` box shift (correct for SBND / HD / VD by construction; no `cathodeX` needed). |
+| `physics/experiment.js` | `tpcOf(gx,gy,gz)` — maps a point to its containing TPC so the per-point shift is the dual of the `op.js` box shift. **Fallback only** — see §13: position-derived TPC is wrong for a cluster an unknown T0 has displaced across the cathode. |
 | `store.js` | `config.op.sidePanel` flag. |
 | `physics/op.js` | Extracted `buildGroup(group, detectorFrame)`; `draw()` builds the reco group into `scene.main` and, when the panel is on, a fixed-box group into `scene.detector`. |
 | `physics/sst.js` | `drawInsideBox(...)` gained optional `targetScene` + `shiftFn`; added `drawDetectorFrame()` / `clearDetectorFrame()` (uses a separate `pointCloudDetector` handle). |
@@ -283,3 +283,35 @@ built `dist/`) to the hosting server — a separate operation (e.g. `collectstat
 into `STATIC_ROOT` and syncing to the BNL host), under its own
 production `STATIC_URL`. Rebuilding locally never touches the server; conversely a
 server deploy must run its **own** Parcel build because `dist/` is not in git.
+
+## 13. Fix — TPC from the optical match, not from position
+
+The §11 shipment used `tpcOf(gx,gy,gz)` (position) to pick each point's drift
+direction. That is wrong for the exact case the panel exists to diagnose: when an
+unknown T0 has slid a cluster's reconstructed x **across the cathode**, the charge
+sits inside the *other* TPC's box, so `tpcOf` returns the wrong TPC and the
+"correction" pushes it further out instead of snapping it home.
+
+This is not fixable from coordinates. For SBND, **x is simultaneously the only axis
+that separates the two TPCs and the only axis the unknown T0 corrupts** (y,z don't
+separate them), so a genuine cathode-crosser and a T0-displaced single-TPC cluster
+are indistinguishable from position. The design doc's §4 `sign(x−cathodeX)` rule has
+the same flaw, and per-cluster majority voting doesn't help (the whole cluster is
+displaced). The cluster JSON carries no TPC tag either — `Bee::Points::append`
+(`util/src/Bee.cxx`) emits only `x,y,z,q,cluster_id,real_cluster_id`.
+
+The truth lives in the **optical match**: the op JSON's `op_cluster_ids` + `apa`
+(`util/src/Bee.cxx`) give, per flash, the matched cluster ids and that flash's TPC.
+SBND flashes are reconstructed per TPC side, so a matched flash's `apa` **is** the
+true TPC of its clusters — position-independent. The fix builds a `cluster_id → apa`
+map and uses it for the drift direction, keeping `tpcOf()` only as the fallback for
+charge not matched to any flash (and for op JSONs lacking `apa`).
+
+| File | Change |
+|---|---|
+| `physics/op.js` | `clusterTpcMap()` — `cluster_id → TPC` from `op_cluster_ids` + `apa`; `null` when those arrays are absent. |
+| `physics/sst.js` | `shiftFn` gains the point's `cluster_id`; `drawDetectorFrame` prefers `clusterTpcMap()` and falls back to `tpcOf()`. |
+
+**Limitation:** corrects only clusters matched to a flash (the matching workflow this
+panel serves). Fully general coverage of unmatched charge would need a per-point
+`tpc`/`face` tag added to the producer's Bee writer and reprocessed data.
