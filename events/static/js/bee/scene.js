@@ -387,20 +387,28 @@ class Scene3D {
         // The drift-reversed TPC is geometrically the mirror of the other,
         // so its wires sit at -alpha. Projecting them to screen-vertical
         // requires rotation -rot. W (alpha=0) is unaffected.
-        let rot = Math.PI / 180 * this.store.experiment.tpc.viewAngle[index];
-        if (this.store.config.helper.reverseDrift) {
-            rot = -rot;
-        }
+        // Resolve the projection angle and any horizontal mirror needed to match
+        // the SP image (channel-ordered). The channel->wire mapping is not uniform
+        // along +Z, so some views must be mirrored / U-V swapped (see
+        // experiment.projView).
+        const view = this.store.experiment.projView(index, this.store.config.helper.reverseDrift);
+        const rot = Math.PI / 180 * view.angleDeg;
+        const mirror = view.mirror;
         if (this.store.experiment.name.includes('vd')) { // vd experiments drift is vertical
             this.camera.active.up.set(0, 1, 0);
-            this.camera.active.position.x = -this.store.config.camera.depth;
+            // Viewing from the opposite side along the view axis mirrors the
+            // image horizontally while keeping drift (vertical) intact.
+            this.camera.active.position.x = (mirror ? 1 : -1) * this.store.config.camera.depth;
             this.camera.active.position.y = this.controller.active.target.y;
             this.camera.active.position.z = this.controller.active.target.z;
-            this.controller.active.rotateLeftUser(rot);
-        } 
+            this.controller.active.rotateLeftUser(mirror ? -rot : rot);
+        }
         else {
-            this.scene.main.rotation.x = rot;
-            this.scene.slice.rotation.x = rot;
+            // An extra 180 deg about the drift (X) axis is a pure horizontal
+            // mirror: it flips the pitch (horizontal) while leaving drift
+            // (vertical) and the wire-collapse unchanged.
+            this.scene.main.rotation.x = rot + (mirror ? Math.PI : 0);
+            this.scene.slice.rotation.x = rot + (mirror ? Math.PI : 0);
             this.camera.active.position.x = this.controller.active.target.x;
             this.camera.active.position.y = this.store.config.camera.depth;
             this.camera.active.position.z = this.controller.active.target.z;

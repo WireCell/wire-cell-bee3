@@ -181,15 +181,54 @@ Typical workflow:
 
 ### Reverse Drift Axis toggle (Helper folder)
 
-Some multi-TPC detectors (e.g. SBND) have two TPCs that share a central cathode but drift in opposite directions.  Because the channel definitions are shared across both anodes, one TPC's 2D projection images appear mirrored relative to signal-processing (SP) output when viewed in the standard orientation.
+Multi-drift detectors (SBND, PDHD, PDVD) have TPCs/anodes that drift in opposite
+directions.  **Helper → Reverse Drift Axis** flips the drift (X) axis of the entire
+scene (`scene.scale.x = -1`) so the reversed-drift TPC's projections show drift
+(time) running the correct way.  The U/V/W projection rotation is `-rot` for a
+reversed TPC (the wire planes are the mirror of the nominal TPC's), so the wires
+collapse correctly.
 
-**Helper → Reverse Drift Axis** flips the drift (X) axis of the entire scene so that the mirrored TPC's W/U/V projections align with the SP reference images.  The U and V projection angles are also corrected automatically: because the drift-reversed TPC's wire planes are geometrically the mirror of the other TPC's, the correct projection rotation is `-rot` (where `rot` is the stored viewAngle), not the default `+rot`.  This ensures the fix works for any wire-angle convention, not just the symmetric ±60° SBND case.
+#### Projection ↔ signal-processing consistency
+
+The SP reference image plots **horizontal = channel number**.  The channel→wire
+mapping in the WCT wire-geometry files (`wire-cell-data/*.json.bz2`) does **not**
+run uniformly along global +Z — its direction depends on detector / plane /
+readout-face.  Bee, by contrast, projects the horizontal axis along the wire-plane
+**pitch** (monotonic in +Z).  Wherever the SP channel direction disagrees with
+Bee's +Z, the two images are **horizontal mirrors**.
+
+Channel-vs-Z direction on each readout face (derived from the wire files):
+
+| Detector | readout face | U | V | W |
+|---|---|---|---|---|
+| SBND (`sbnd-wires-geometry-v0206`) | both TPCs | +Z | +Z | +Z |
+| PDHD (`protodunehd-wires-larsoft-v1`) | nominal | +Z | **−Z** | +Z |
+| PDHD | reverse | **−Z** | +Z | +Z |
+| PDVD (`protodunevd-wires-larsoft-v3`) | nominal (anodes 0–3) | −Z | +Z | +Z |
+| PDVD | reverse (anodes 4–7) | **+Z** | **−Z** | +Z |
+
+W is +Z on every face, so the W projection is never mirrored.  SBND numbers
+channels consistently in +Z, so it needs no correction.  PDHD/PDVD (larsoft files)
+number channels in a plane/face-dependent direction and need per-plane correction.
+
+The correction lives in `Experiment.projView(index, reverseDrift)`
+(`events/static/js/bee/physics/experiment.js`), which returns the scene rotation
+angle and a horizontal-mirror flag.  `scene.js:tpcView()` applies a mirror as an
+extra 180° about the drift axis (horizontal-drift detectors) or an opposite-side
+camera view (vertical-drift):
+
+- **SBND / default** — `viewAngle[index]`, no mirror.
+- **PDHD** — mirror **V** in nominal drift, **U** in reverse drift (`projMirror`).
+- **PDVD** — reverse anodes (4–7) have their U/V wire tilts *swapped* vs nominal
+  (U +60↔−60, V −60↔+60), so a reverse anode is geometrically a nominal anode with
+  U and V exchanged.  `projView` renders the reverse view as the nominal view with
+  **U↔V swapped**; the drift/vertical flip is handled by the toggle's `scale.x`.
 
 Typical workflow:
-1. Load an event with data from both TPCs.
+1. Load an event with data from multiple TPCs/anodes.
 2. Press `w` — note which TPC's W projection matches the SP W image and which looks mirrored.
 3. Toggle **Reverse Drift Axis** and press `w` again — the mirrored TPC should now match.
-4. Press `u` and `v` to verify those planes also match.
+4. Press `u` and `v` to verify those planes also match the SP U/V images.
 5. Toggle off to return to the original orientation.
 
 ## What Is Not in the Repo

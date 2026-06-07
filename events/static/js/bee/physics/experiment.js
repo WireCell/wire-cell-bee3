@@ -51,7 +51,30 @@ class Experiment {
     driftDir(i) {
         return ((i % 2) -0.5) * -2; // -1 or 1
     }
-    
+
+    // Whether the U/V/W projection view (index 0/1/2) must be horizontally
+    // mirrored to match the signal-processing image.
+    //
+    // SP plots horizontal = channel number. The channel->wire mapping in the WCT
+    // wire-geometry files does NOT run uniformly along global +Z; its direction
+    // depends on detector/plane/readout-face. Bee always renders the projection
+    // horizontal along +pitch (~ +Z). Where the SP channel direction disagrees
+    // with Bee's +Z, the images are horizontal mirrors. Default: no mirror.
+    // (See docs / channel-vs-Z table; SBND numbers channels consistently +Z so
+    // it needs no mirror.)
+    projMirror(index, reverseDrift) { return false; }
+
+    // Resolve a U/V/W projection (index 0/1/2) into the scene rotation angle (deg)
+    // and whether to horizontally mirror it, to match the SP image. The default
+    // uses viewAngle[index] (negated for reverse drift) and projMirror(). Detectors
+    // whose readout-face wire geometry differs more substantially (e.g. PDVD, whose
+    // reverse anodes swap U/V wire tilts) override this.
+    projView(index, reverseDrift) {
+        let angleDeg = this.tpc.viewAngle[index];
+        if (reverseDrift) angleDeg = -angleDeg;
+        return { angleDeg, mirror: this.projMirror(index, reverseDrift) };
+    }
+
     opTPC(i) { return 0; } // TPC no for op detector i
 
     toString() { return `${this.name}`; }
@@ -777,6 +800,19 @@ class ProtoDUNEVD extends Experiment {
         return i < 4 ? 1 : -1;
     }
 
+    // PDVD reverse anodes (4-7) have their U/V wire tilts swapped relative to the
+    // nominal anodes (0-3): U  +60 <-> -60, V  -60 <-> +60. So a reverse anode is
+    // geometrically a nominal anode with U and V exchanged. Since the nominal
+    // projection is correct, render the reverse view as nominal but with U<->V
+    // swapped (the drift/vertical flip is handled separately by setReverseDrift).
+    projView(index, reverseDrift) {
+        if (!reverseDrift) {
+            return { angleDeg: this.tpc.viewAngle[index], mirror: false };
+        }
+        const swap = index === 0 ? 1 : (index === 1 ? 0 : 2); // U<->V, W unchanged
+        return { angleDeg: this.tpc.viewAngle[swap], mirror: false };
+    }
+
 }
 
 // --------------------------------------------------------
@@ -816,6 +852,14 @@ class ProtoDUNEHD extends Experiment {
         // };
         this.camera.depth = 3000;
 
+    }
+
+    // SP channel direction on the readout face (channel-vs-Z table):
+    //   nominal face: U=+Z, V=-Z, W=+Z   ->  mirror V
+    //   reverse face: U=-Z, V=+Z, W=+Z   ->  mirror U
+    // Bee renders +Z; so mirror whichever induction plane runs -Z in SP.
+    projMirror(index, reverseDrift) {
+        return index === (reverseDrift ? 0 : 1);
     }
 
 }
