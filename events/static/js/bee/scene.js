@@ -444,7 +444,13 @@ class Scene3D {
         const [lx, ly, lz] = this.store.experiment.toLocalXYZ(gx, gy, gz);
         this.ensureTargetSphere();
         this.targetSphere.position.set(lx, ly, lz);
-        this.controller.active.target.set(lx, ly, lz);
+        // The sphere lives in scene.main's local frame, but the controls
+        // target is in world coordinates; scene.main may be rotated (VD
+        // drift, projection views) or mirrored (reverse drift).
+        const world = new THREE.Vector3(lx, ly, lz);
+        this.scene.main.updateMatrixWorld();
+        this.scene.main.localToWorld(world);
+        this.controller.active.target.copy(world);
         this.controller.active.update();
         this.store.config.camera.origin.x = gx;
         this.store.config.camera.origin.y = gy;
