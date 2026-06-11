@@ -800,21 +800,24 @@ class ProtoDUNEVD extends Experiment {
         // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 24 PMT
         // (detType 1) = 40 channels, in PDVD_PDS_Mapping_v09162025.json channel
         // order (cathode = channels 4-11). Representative placement in the WCT box
-        // frame: cathode modules on the x=0 plane, membrane modules on the
-        // y=+-336.4 walls, PMTs on the bottom anode plane -- not surveyed GDML
-        // positions (the GDML frame is shifted from the WCT frame used by the boxes).
+        // frame (not surveyed GDML positions, which are in a frame shifted from the
+        // boxes). entry = [x, y, z, detType, orient]; orient 0/absent = face +-x
+        // (drift), 1 = face +-y (lateral wall). Cathode X-ARAPUCAs lie on the central
+        // cathode plane (x=0); membrane X-ARAPUCAs lie flat on the lateral y=+-336.4
+        // walls; PMTs sit on the bottom membrane just below the bottom CRP (x=-341.55).
         let vdOp = {};
         let nC = 0, nM = 0, nP = 0;
         for (let i = 0; i < 40; i++) {
-            if (i >= 4 && i <= 11) { // cathode X-ARAPUCA: x=0 plane, 2(y) x 4(z) grid
+            if (i >= 4 && i <= 11) { // cathode X-ARAPUCA: x=0 plane, 2(y) x 4(z) grid, face +-x
                 let col = nC % 2, row = Math.floor(nC / 2); nC++;
                 vdOp[i] = [0.0, col == 0 ? -168 : 168, 37.5 + row * 75, 2];
             }
-            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { // membrane X-ARAPUCA: y=+-336.4 walls
-                let wall = nM % 2, zi = Math.floor(nM / 2); nM++;
-                vdOp[i] = [-170.0, wall == 0 ? -336.4 : 336.4, 37.5 + zi * 75, 2];
+            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { // membrane X-ARAPUCA: lateral wall, face +-y
+                let wall = nM < 4 ? -336.4 : 336.4, idx = nM % 4; nM++;
+                let x = idx % 2 == 0 ? -170 : 170, z = idx < 2 ? 100 : 200;
+                vdOp[i] = [x, wall, z, 2, 1]; // orient 1 = lie flat on the y wall
             }
-            else { // PMT: bottom anode plane x=-341.55, 4(y) x 6(z) grid
+            else { // PMT: bottom membrane below the bottom CRP, x=-341.55, 4(y) x 6(z) grid, face +x
                 let yi = nP % 4, zi = Math.floor(nP / 4); nP++;
                 vdOp[i] = [-341.55, [-250, -83, 83, 250][yi], 25 + zi * 50, 1];
             }

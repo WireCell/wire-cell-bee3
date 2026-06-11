@@ -185,19 +185,20 @@ class Helper {
                         //     side: THREE.DoubleSide
                         // }));
                         let circle = new THREE.LineSegments(
-                            new THREE.EdgesGeometry(circleGeometry), 
+                            new THREE.EdgesGeometry(circleGeometry),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        circle.rotation.y = Math.PI / 2;
+                        // orient 1 = lie flat on a lateral (+-y) wall; else face +-x
+                        if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; } else { circle.rotation.y = Math.PI / 2; }
                         circle.position.set(...exp.toLocalXYZ(location[i][0], location[i][1], location[i][2]));
                         this.pd.add(circle);
                     }
                     else if (detType == 2) {
                         let xara = new THREE.LineSegments(
-                            new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)), 
+                            new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        xara.rotation.y = Math.PI / 2;
+                        if (location[i][4] == 1) { xara.rotation.x = Math.PI / 2; } else { xara.rotation.y = Math.PI / 2; }
                         xara.position.set(...exp.toLocalXYZ(location[i][0], location[i][1], location[i][2]));
                         this.pd.add(xara);
                     }

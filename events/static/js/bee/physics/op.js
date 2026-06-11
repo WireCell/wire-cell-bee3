@@ -203,7 +203,8 @@ class OP {
                             new THREE.EdgesGeometry(circleGeometry),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        circle.rotation.y = Math.PI / 2;
+                        // orient 1 = lie flat on a lateral (+-y) wall; else face +-x
+                        if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; } else { circle.rotation.y = Math.PI / 2; }
                         circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
                         group.add(circle);
                     }
@@ -212,7 +213,7 @@ class OP {
                             new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        xara.rotation.y = Math.PI / 2;
+                        if (location[i][4] == 1) { xara.rotation.x = Math.PI / 2; } else { xara.rotation.y = Math.PI / 2; }
                         xara.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
                         group.add(xara);
                     }
@@ -268,7 +269,7 @@ class OP {
                         opacity: 0.2,
                         side: THREE.DoubleSide
                     }));
-                    circle.rotation.y = Math.PI / 2;
+                    if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; } else { circle.rotation.y = Math.PI / 2; }
                     let sox = location[i][0]+shiftX; // shifted op x location
                     circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
                     group.add(circle);
@@ -294,7 +295,7 @@ class OP {
                                 opacity: 0.2,
                                 side: THREE.DoubleSide
                             }));
-                            circle_pred.rotation.y = Math.PI / 2;
+                            if (location[i][4] == 1) { circle_pred.rotation.x = Math.PI / 2; } else { circle_pred.rotation.y = Math.PI / 2; }
                             let sox = location[i][0]+shiftX; // shifted op x location
                             circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
                             group.add(circle_pred);
