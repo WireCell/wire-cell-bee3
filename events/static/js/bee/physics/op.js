@@ -305,12 +305,13 @@ class OP {
                                 //   lateral-wall (orient 1) dets -> shift along the vertical drift x,
                                 //     so x<0 dets sit below and x>0 dets sit above (top/bottom);
                                 //   anode/cathode (face +-x) dets -> keep the SAME drift x as the
-                                //     measured circle and fan out in y to two sides.
-                                let predOff = (location[i][0] >= 0 ? 40 : -40);
+                                //     measured circle and fan out in y to two sides (keyed off y).
                                 if (location[i][4] == 1) {
+                                    let predOff = (location[i][0] >= 0 ? 40 : -40);
                                     circle_pred.position.set(...exp.toLocalXYZ(sox+predOff, location[i][1], location[i][2]));
                                 }
                                 else {
+                                    let predOff = (location[i][1] >= 0 ? 40 : -40);
                                     circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]+predOff, location[i][2]));
                                 }
                             }
