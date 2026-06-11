@@ -299,13 +299,20 @@ class OP {
                             let sox = location[i][0]+shiftX; // shifted op x location
                             if (this.store.experiment.name == "protodunehd"
                                 || this.store.experiment.name == "protodunevd") {
-                                // Offset the predicted (green) circle off the measured (red) one
-                                // along the drift/x axis so they don't overlap: face-+-x detectors
-                                // -> just outside the detector (left dets to -x, right dets to +x);
-                                // lateral-wall (orient 1) dets -> +-x reads as top/bottom along the
-                                // vertical drift, so x<0 dets sit below and x>0 dets sit above.
+                                // Offset the predicted (green) circle off the measured (red) one so
+                                // they don't overlap, staying in the detector's own plane (sign keyed
+                                // off the detector's drift side so the two opposing planes fan apart):
+                                //   lateral-wall (orient 1) dets -> shift along the vertical drift x,
+                                //     so x<0 dets sit below and x>0 dets sit above (top/bottom);
+                                //   anode/cathode (face +-x) dets -> keep the SAME drift x as the
+                                //     measured circle and fan out in y to two sides.
                                 let predOff = (location[i][0] >= 0 ? 40 : -40);
-                                circle_pred.position.set(...exp.toLocalXYZ(sox+predOff, location[i][1], location[i][2]));
+                                if (location[i][4] == 1) {
+                                    circle_pred.position.set(...exp.toLocalXYZ(sox+predOff, location[i][1], location[i][2]));
+                                }
+                                else {
+                                    circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]+predOff, location[i][2]));
+                                }
                             }
                             else {
                                 circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
