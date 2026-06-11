@@ -797,7 +797,35 @@ class ProtoDUNEVD extends Experiment {
         this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
 
+        // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 24 PMT
+        // (detType 1) = 40 channels, in PDVD_PDS_Mapping_v09162025.json channel
+        // order (cathode = channels 4-11). Representative placement in the WCT box
+        // frame: cathode modules on the x=0 plane, membrane modules on the
+        // y=+-336.4 walls, PMTs on the bottom anode plane -- not surveyed GDML
+        // positions (the GDML frame is shifted from the WCT frame used by the boxes).
+        let vdOp = {};
+        let nC = 0, nM = 0, nP = 0;
+        for (let i = 0; i < 40; i++) {
+            if (i >= 4 && i <= 11) { // cathode X-ARAPUCA: x=0 plane, 2(y) x 4(z) grid
+                let col = nC % 2, row = Math.floor(nC / 2); nC++;
+                vdOp[i] = [0.0, col == 0 ? -168 : 168, 37.5 + row * 75, 2];
+            }
+            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { // membrane X-ARAPUCA: y=+-336.4 walls
+                let wall = nM % 2, zi = Math.floor(nM / 2); nM++;
+                vdOp[i] = [-170.0, wall == 0 ? -336.4 : 336.4, 37.5 + zi * 75, 2];
+            }
+            else { // PMT: bottom anode plane x=-341.55, 4(y) x 6(z) grid
+                let yi = nP % 4, zi = Math.floor(nP / 4); nP++;
+                vdOp[i] = [-341.55, [-250, -83, 83, 250][yi], 25 + zi * 50, 1];
+            }
+        }
+        this.updateOPLocation(vdOp, 40);
+        this.op.peScaling = 0.5;
+
     }
+
+    // Each photon detector sits on a detector face; map it to its TPC box.
+    opTPC(i) { let l = this.op.location[i]; return this.tpcOf(l[0], l[1], l[2]); }
 
     // PDVD anodes 0-3 are bottom-drift (+1), 4-7 are top-drift (-1).
     // Base alternating formula ((i%2)-0.5)*-2 is wrong for VD's grouped 8-anode layout.
@@ -866,7 +894,33 @@ class ProtoDUNEHD extends Experiment {
         // };
         this.camera.depth = 3000;
 
+        // X-ARAPUCA photon detectors: 4 APA x 10 bars x 4 windows = 160 channels,
+        // all detType 2 (rectangle), in offline-channel order ch = 40*apa + 4*bar + win.
+        // Placed on each APA's anode (collection-wire) plane, spread over the box y/z
+        // extents -- representative layout in the WCT box frame (docs/protodune_geometry.md),
+        // not surveyed GDML positions (the GDML frame is shifted from the WCT frame).
+        let hdOp = {};
+        let hdX = [-353.202, 353.002, -353.202, 353.002]; // anode plane per APA (box outer edge)
+        let hdY0 = 7.61, hdY1 = 606.67;
+        let hdZ = [[-0.10, 230.573], [231.96, 462.633]]; // APA0/1 upstream, APA2/3 downstream
+        let ch = 0;
+        for (let apa = 0; apa < 4; apa++) {
+            let zr = hdZ[apa < 2 ? 0 : 1];
+            for (let bar = 0; bar < 10; bar++) {
+                let y = hdY0 + (bar + 0.5) * (hdY1 - hdY0) / 10;
+                for (let win = 0; win < 4; win++) {
+                    let z = zr[0] + (win + 0.5) * (zr[1] - zr[0]) / 4;
+                    hdOp[ch++] = [hdX[apa], y, z, 2];
+                }
+            }
+        }
+        this.updateOPLocation(hdOp, 160);
+        this.op.peScaling = 0.5;
+
     }
+
+    // Each photon detector sits on an APA face; map it to that APA's TPC box.
+    opTPC(i) { let l = this.op.location[i]; return this.tpcOf(l[0], l[1], l[2]); }
 
     // SP channel direction on the readout face (channel-vs-Z table):
     //   nominal face: U=+Z, V=-Z, W=+Z   ->  mirror V
