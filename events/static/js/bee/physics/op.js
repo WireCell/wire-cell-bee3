@@ -297,7 +297,19 @@ class OP {
                             }));
                             if (location[i][4] == 1) { circle_pred.rotation.x = Math.PI / 2; } else { circle_pred.rotation.y = Math.PI / 2; }
                             let sox = location[i][0]+shiftX; // shifted op x location
-                            circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
+                            if (this.store.experiment.name == "protodunehd"
+                                || this.store.experiment.name == "protodunevd") {
+                                // Offset the predicted (green) circle off the measured (red) one
+                                // along the drift/x axis so they don't overlap: face-+-x detectors
+                                // -> just outside the detector (left dets to -x, right dets to +x);
+                                // lateral-wall (orient 1) dets -> +-x reads as top/bottom along the
+                                // vertical drift, so x<0 dets sit below and x>0 dets sit above.
+                                let predOff = (location[i][0] >= 0 ? 40 : -40);
+                                circle_pred.position.set(...exp.toLocalXYZ(sox+predOff, location[i][1], location[i][2]));
+                            }
+                            else {
+                                circle_pred.position.set(...exp.toLocalXYZ(sox, location[i][1]-halfy*2, location[i][2]));
+                            }
                             group.add(circle_pred);
                         }
                     }
