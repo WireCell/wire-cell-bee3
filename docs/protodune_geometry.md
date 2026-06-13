@@ -91,9 +91,16 @@ The `op` JSON's `op_pes[i]` / `op_pes_pred[i]` are the measured / Q/L-predicted
 PE at OpChannel `i`, so this ordering must match the toolkit's. **It is NOT
 `ch = 40·APA` in WCT-APA order** — placing the 40-channel blocks that way drew a
 physically one-sided flash on *both* cathode sides (channels 0–39 and 120–159
-landed on the wrong side). Fixed 2026-06 in `experiment.js` (`ProtoDUNEHD`); the
-bar→y / window→z spread within a block is still representative, not surveyed
-GDML.
+landed on the wrong side). Fixed 2026-06 in `experiment.js` (`ProtoDUNEHD`).
+
+Within each 40-channel block the geom file is a regular 10 (y) × 4 (z) grid,
+ordered **z-window outer (descending z) then y-bar inner (descending y)**: ch 0–9
+share the highest z window with y running 578.9 → 32.2 cm, ch 10–19 the next z
+window down, and so on. Bee3 reproduces this ordering so `op_pes[ch]` lands in the
+right y/z cell — an earlier version iterated the loops transposed and ascending,
+so each channel's PE was drawn in the wrong y/z cell within its block (also fixed
+2026-06). The grid *centres* stay representative (box y/z extents), not surveyed
+GDML positions.
 
 ## 3. ProtoDUNE-VD
 
@@ -134,6 +141,15 @@ Relation to the clustering FV (not used for the boxes): per-drift FV x is
 (`apa_plane` = 57.15 mm), so blob points in the 335.8–341.55 cm "anode band"
 are inside the boxes but outside the FV. Overall FV: y ±336.4,
 z [0.05, 299.25].
+
+### Optical channels
+
+PDVD's `op` instance (8 cathode + 8 membrane X-ARAPUCA + 24 PMT = 40 channels)
+is hand-derived from the `PDVD_PDS_Mapping_v09162025.json` channel order, with
+representative placement in the box frame. Unlike PDHD, there is **no toolkit
+per-channel opdet geometry file** in the repo to validate it against (only
+`pdvd/docs/photon-detector-chain.md`), so the ch→position mapping here is not
+cross-checked against a surveyed toolkit reference.
 
 ### Previous (pre-2026-06) boxes
 

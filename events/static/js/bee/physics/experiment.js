@@ -905,8 +905,12 @@ class ProtoDUNEHD extends Experiment {
         //   ch  80-119  -x (anode -356), z downstream
         //   ch 120-159  -x (anode -356), z upstream
         // It is NOT ch = 40*apa in WCT-APA order -- placing the blocks that way drew a
-        // one-sided flash on BOTH cathode sides.  The bar->y / win->z spread within a
-        // block stays representative (box y/z extents), not surveyed GDML positions.
+        // one-sided flash on BOTH cathode sides.  Within a 40-channel block the geom
+        // file lays out a regular 10(y) x 4(z) grid, ordered z-window OUTER (descending
+        // z) then y-bar INNER (descending y): ch 0-9 share the highest z window with y
+        // running 578.9 -> 32.2, ch 10-19 the next z window down, etc. We reproduce that
+        // ordering so PE[ch] lands in the right y/z cell; the grid centres stay
+        // representative (box y/z extents), not surveyed GDML positions.
         let hdOp = {};
         let hdX = [353.002, 353.002, -353.202, -353.202]; // blocks 0,1 = +x ; 2,3 = -x
         let hdY0 = 7.61, hdY1 = 606.67;
@@ -914,10 +918,10 @@ class ProtoDUNEHD extends Experiment {
         let ch = 0;
         for (let blk = 0; blk < 4; blk++) {
             let zr = (blk % 2 === 0) ? hdZdn : hdZup; // blk 0,2 downstream ; 1,3 upstream
-            for (let bar = 0; bar < 10; bar++) {
-                let y = hdY0 + (bar + 0.5) * (hdY1 - hdY0) / 10;
-                for (let win = 0; win < 4; win++) {
-                    let z = zr[0] + (win + 0.5) * (zr[1] - zr[0]) / 4;
+            for (let win = 0; win < 4; win++) {        // z-window outer, high z first
+                let z = zr[1] - (win + 0.5) * (zr[1] - zr[0]) / 4;
+                for (let bar = 0; bar < 10; bar++) {   // y-bar inner, high y first
+                    let y = hdY1 - (bar + 0.5) * (hdY1 - hdY0) / 10;
                     hdOp[ch++] = [hdX[blk], y, z, 2];
                 }
             }
