@@ -897,23 +897,28 @@ class ProtoDUNEHD extends Experiment {
         // };
         this.camera.depth = 3000;
 
-        // X-ARAPUCA photon detectors: 4 APA x 10 bars x 4 windows = 160 channels,
-        // all detType 2 (rectangle), in offline-channel order ch = 40*apa + 4*bar + win.
-        // Placed on each APA's anode (collection-wire) plane, spread over the box y/z
-        // extents -- representative layout in the WCT box frame (docs/protodune_geometry.md),
-        // not surveyed GDML positions (the GDML frame is shifted from the WCT frame).
+        // X-ARAPUCA photon detectors: 160 channels in 40-channel blocks, detType 2.
+        // The offline OpChannel order is SIDE-major then z-half (from the run light
+        // ROOT flashopdet/opdet_geo; see toolkit pdhd-opdet-geom.json, OpChannel==OpDet):
+        //   ch   0- 39  +x (anode +356), z downstream
+        //   ch  40- 79  +x (anode +356), z upstream
+        //   ch  80-119  -x (anode -356), z downstream
+        //   ch 120-159  -x (anode -356), z upstream
+        // It is NOT ch = 40*apa in WCT-APA order -- placing the blocks that way drew a
+        // one-sided flash on BOTH cathode sides.  The bar->y / win->z spread within a
+        // block stays representative (box y/z extents), not surveyed GDML positions.
         let hdOp = {};
-        let hdX = [-353.202, 353.002, -353.202, 353.002]; // anode plane per APA (box outer edge)
+        let hdX = [353.002, 353.002, -353.202, -353.202]; // blocks 0,1 = +x ; 2,3 = -x
         let hdY0 = 7.61, hdY1 = 606.67;
-        let hdZ = [[-0.10, 230.573], [231.96, 462.633]]; // APA0/1 upstream, APA2/3 downstream
+        let hdZdn = [231.96, 462.633], hdZup = [-0.10, 230.573]; // downstream / upstream
         let ch = 0;
-        for (let apa = 0; apa < 4; apa++) {
-            let zr = hdZ[apa < 2 ? 0 : 1];
+        for (let blk = 0; blk < 4; blk++) {
+            let zr = (blk % 2 === 0) ? hdZdn : hdZup; // blk 0,2 downstream ; 1,3 upstream
             for (let bar = 0; bar < 10; bar++) {
                 let y = hdY0 + (bar + 0.5) * (hdY1 - hdY0) / 10;
                 for (let win = 0; win < 4; win++) {
                     let z = zr[0] + (win + 0.5) * (zr[1] - zr[0]) / 4;
-                    hdOp[ch++] = [hdX[apa], y, z, 2];
+                    hdOp[ch++] = [hdX[blk], y, z, 2];
                 }
             }
         }

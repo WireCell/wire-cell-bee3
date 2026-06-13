@@ -72,6 +72,29 @@ GDML TPC-active-volume numbers: anode edges 0.25 cm short of the wire planes,
 asymmetric cathode gap [−1.00, +0.80], y 4 cm low at the bottom / 2.8 cm
 short at the top.
 
+### Optical channels (X-ARAPUCA, the `op` instance)
+
+160 X-ARAPUCA windows, drawn at their APA's anode plane and assigned to a TPC
+box by position (`opTPC(i) = tpcOf(x,y,z)`). The offline OpChannel order is
+**side-major then z-half** — taken from the run light ROOT `flashopdet/opdet_geo`
+(toolkit `cfg/pgrapher/experiment/pdhd/pdhd-opdet-geom.json`, where
+OpChannel == OpDet, `ChannelsPerOpDet = 1`):
+
+| OpChannel | drift side | z-half | TPC box |
+|---|---|---|---|
+| 0–39    | +x (anode +356) | downstream | 3 |
+| 40–79   | +x (anode +356) | upstream   | 1 |
+| 80–119  | −x (anode −356) | downstream | 2 |
+| 120–159 | −x (anode −356) | upstream   | 0 |
+
+The `op` JSON's `op_pes[i]` / `op_pes_pred[i]` are the measured / Q/L-predicted
+PE at OpChannel `i`, so this ordering must match the toolkit's. **It is NOT
+`ch = 40·APA` in WCT-APA order** — placing the 40-channel blocks that way drew a
+physically one-sided flash on *both* cathode sides (channels 0–39 and 120–159
+landed on the wrong side). Fixed 2026-06 in `experiment.js` (`ProtoDUNEHD`); the
+bar→y / window→z spread within a block is still representative, not surveyed
+GDML.
+
 ## 3. ProtoDUNE-VD
 
 Eight CRPs in a 2 (drift side) × 2 (y) × 2 (z) layout: anodes 0–3 at the
