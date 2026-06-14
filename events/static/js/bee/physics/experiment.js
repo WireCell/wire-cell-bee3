@@ -874,7 +874,7 @@ class ProtoDUNEHD extends Experiment {
 
         this.tpc.viewAngle = [-35.7, 35.7, 0];
         this.updateBoxROI([-200, 0, 250, 500, 0, 500]);
-        this.tpc.driftVelocity = 0.16; // cm/us
+        this.tpc.driftVelocity = 0.1565; // cm/us — matches toolkit drift_speed 1.565 mm/us (cfg/.../pdhd/clus.jsonnet; was 0.16=1.6mm/us pre-calibration)
         this.daq.timeBeforeTrigger = 500 * 0.5; //us
         this.daq.timeAfterTrigger = 5500 * 0.5; //us
         this.beam.dir = [-0.178177, -0.196387, 0.959408];
