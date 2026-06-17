@@ -856,20 +856,23 @@ class ProtoDUNEHD extends Experiment {
 
     constructor() {
         super('protodunehd');
-        // Boxes span cathode FV edge (|x|=2.54 cm, the WCT clustering cathode gap)
-        // to the cathode-facing collection-wire plane (x=-353.202 / +353.002 cm);
-        // y/z from the per-APA wire extents of
+        // Boxes span the physical cathode SURFACE (|x|=0.159 cm = half the
+        // 3.175 mm cpa_thick, the toolkit cpa_plane / QLMatching cathode_x) to the
+        // cathode-facing collection-wire plane (x=-353.202 / +353.002 cm = the
+        // BlobSampler xorig); y/z from the per-APA wire extents of
         // protodunehd-wires-larsoft-v1.json.bz2 (wirecell-util wires-info).
+        // (Was |x|=2.54 cm, the 1-inch clustering FV inset -- not the physical
+        // cathode -- which made cathode-crossers render ~2.4 cm "over" the box.)
         // Box index = WCT APA 0-3 (0/2 drift -x at z low/high, 1/3 drift +x).
         this.updateTPCLocation([
             // [-352.949, -1.00198, 3.6375, 603.861, -0.59375, 231.066],
             // [0.801975, 352.749, 3.6375, 603.861, -0.59375, 231.066],
             // [-352.949, -1.00198, 3.6375, 603.861, 231.466, 463.126],
             // [0.801975, 352.749, 3.6375, 603.861, 231.466, 463.126]
-            [-353.202, -2.54, 7.61, 606.67, -0.10, 230.573],
-            [2.54, 353.002, 7.61, 606.67, -0.10, 230.573],
-            [-353.202, -2.54, 7.61, 606.67, 231.96, 462.633],
-            [2.54, 353.002, 7.61, 606.67, 231.96, 462.633]
+            [-353.202, -0.159, 7.61, 606.67, -0.10, 230.573],
+            [0.159, 353.002, 7.61, 606.67, -0.10, 230.573],
+            [-353.202, -0.159, 7.61, 606.67, 231.96, 462.633],
+            [0.159, 353.002, 7.61, 606.67, 231.96, 462.633]
         ]);
 
         this.tpc.viewAngle = [-35.7, 35.7, 0];
