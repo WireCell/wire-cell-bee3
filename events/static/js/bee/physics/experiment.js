@@ -877,7 +877,7 @@ class ProtoDUNEHD extends Experiment {
 
         this.tpc.viewAngle = [-35.7, 35.7, 0];
         this.updateBoxROI([-200, 0, 250, 500, 0, 500]);
-        this.tpc.driftVelocity = 0.1580; // cm/us — matches toolkit drift_speed 1.580 mm/us (cfg/.../pdhd/clus.jsonnet; cathode-end centered on n=4 evt-983 crossers; was 0.1585 over-shot cathode, 0.1565=1.565, 0.16=1.6)
+        this.tpc.driftVelocity = 0.1576; // cm/us — matches toolkit drift_speed 1.576 mm/us (cfg/.../pdhd/clus.jsonnet; top cathode crosser just inside cathode, n=4 evt-983; was 0.1580/0.1585 over-shot cathode, 0.1565=1.565, 0.16=1.6)
         this.daq.timeBeforeTrigger = 500 * 0.5; //us
         this.daq.timeAfterTrigger = 5500 * 0.5; //us
         this.beam.dir = [-0.178177, -0.196387, 0.959408];
