@@ -366,3 +366,25 @@ mis-match deserves in a panel whose job (§11) is to *diagnose* the matching.
 SBND behavior is byte-identical. **PDVD** has the same opaque cathode and almost
 certainly wants the same override, but it is not validated on this event; left as a
 follow-up rather than shipped blind.
+
+### 14.1 Follow-up — the drift side is per **cluster**, not per **point**
+
+The first cut above took PDHD's drift direction from `tpcOf(reco)` **per point**. That
+re-introduced §4's trap from the *other* direction: a PDHD cluster whose reco-x spread
+straddles `x=0` (the cathode) had its points either side of 0 shifted in **opposite**
+directions, tearing one cluster into two visually separated pieces. Evt-983 clusters
+35/40/90 each straddle 0 (e.g. 35: 4307 points at x>0, 2817 at x<0) and split.
+
+For PDHD this is wrong by construction: the wires that read a cluster all sit on **one**
+anode, so the cluster belongs to **one** TPC — a reco-x straddle of 0 is charge spread,
+not a genuine two-sided crosser. (This is the opposite of §4's SBND case, where a single
+cluster genuinely spanning a *transparent* cathode must reconnect per-point. SBND already
+sidesteps both: §13 takes its side from the matched flash's `apa`, one TPC per cluster.)
+
+Fix: `drawDetectorFrame` decides each cluster's drift side **once** from its charge
+**centroid**, then rigidly translates the whole cluster by that single
+`driftV·t·driftDir`. The cluster stays intact on its own TPC; the matched-flash time
+(possibly the other side's, per §14) is unchanged. Cluster 22 is untouched (one-sided,
+centroid = per-point); 35/40/90 now translate as single rigid pieces. The base
+`detectorFrameTpc` still ignores the coordinates (returns `apaTpc`), so **SBND stays
+byte-identical**. `physics/sst.js` only.

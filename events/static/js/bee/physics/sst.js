@@ -215,6 +215,12 @@ class SST {
     //               cluster across the cathode, so position cannot recover the side);
     //               PDHD (opaque cathode, side-specific wires) takes it from the charge
     //               position, since a crosser's light side is NOT its charge side.
+    //
+    // The drift direction is decided ONCE PER CLUSTER from its charge centroid, never
+    // per point. driftV*t*driftDir is then constant over the cluster, so the whole
+    // cluster is rigidly translated and stays on its own TPC. (Per-point tpcOf split a
+    // cathode-straddling cluster in two: points either side of x=0 got opposite drift
+    // directions -> opposite shifts. A cluster belongs to one TPC; keep it intact.)
     drawDetectorFrame() {
         let exp = this.store.experiment;
         let op = this.bee.op;
@@ -228,13 +234,24 @@ class SST {
         let apa = op.data.apa;
         let opT = op.data.op_t;
         let tFallback = opT[op.currentFlash];
+        // per-cluster charge centroid (x is what picks the drift side; y/z carried for
+        // tpcOf's general use) -- so every point of a cluster sees the same TPC.
+        let csx = {}, csy = {}, csz = {}, cn = {};
+        for (let i = 0; i < this.data.x.length; i++) {
+            let id = Number(this.data.cluster_id[i]);
+            csx[id] = (csx[id] || 0) + this.data.x[i];
+            csy[id] = (csy[id] || 0) + this.data.y[i];
+            csz[id] = (csz[id] || 0) + this.data.z[i];
+            cn[id] = (cn[id] || 0) + 1;
+        }
         let shiftFn = (gx, gy, gz, clusterId) => {
             let id = Number(clusterId);
             let fi = (flashMap && flashMap.has(id)) ? flashMap.get(id) : null;
             let t = (fi != null) ? opT[fi] : tFallback;
             let apaTpc = (fi != null && apa && apa[fi] != null) ? parseInt(apa[fi]) : null;
             if (apaTpc != null && Number.isNaN(apaTpc)) apaTpc = null;
-            let tpc = exp.detectorFrameTpc(id, gx, gy, gz, apaTpc);
+            let n = cn[id] || 1;
+            let tpc = exp.detectorFrameTpc(id, csx[id] / n, csy[id] / n, csz[id] / n, apaTpc);
             return gx - driftV * t * exp.driftDir(tpc);
         };
         this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);
