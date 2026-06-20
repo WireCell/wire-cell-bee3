@@ -66,6 +66,30 @@ class OP {
         return map;
     }
 
+    // Union of cluster ids matched to ANY flash (always a Set, empty when
+    // op_cluster_ids is absent, so per-point callers never throw). A "non-matching"
+    // cluster is one in NO flash -- the complement of this over the charge clusters.
+    // This is deliberately the GLOBAL match set, NOT the complement of the current-flash
+    // "Matching Cluster" button (currentMatchingIds): a cluster matched to a different
+    // flash is still globally matched, so it shows under neither button.
+    allMatchingIds() {
+        let set = new Set();
+        let cids = this.data && this.data.op_cluster_ids;
+        if (cids) { for (let arr of cids) { if (arr) for (let c of arr) set.add(Number(c)); } }
+        return set;
+    }
+
+    // Charge cluster ids matched to no flash, for the status bar. The universe of
+    // clusters is the currently displayed charge frame (current_sst).
+    nonMatchingIds() {
+        let matched = this.allMatchingIds();
+        let out = [], seen = new Set();
+        let sst = this.bee.current_sst;
+        let cl = sst && sst.data && sst.data.cluster_id;
+        if (cl) { for (let id of cl) { let k = Number(id); if (!matched.has(k) && !seen.has(k)) { seen.add(k); out.push(k); } } }
+        return out;
+    }
+
     // Element-wise sum of a per-channel array (op_pes / op_pes_pred) over the
     // group's flashes.  Channels are disjoint per TPC and every flash carries a
     // full per-channel vector, so the sum is the union across both TPC sides.

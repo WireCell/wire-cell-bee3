@@ -91,6 +91,8 @@ class SST {
         let config = this.store.config;
         let theme = config.theme;
         let USER_COLORS = this.store.ui.USER_COLORS;
+        // matched cluster ids (computed once -- a per-point Set lookup, never a throw)
+        let matchedSet = config.op.showNonMatchingCluster ? this.bee.op.allMatchingIds() : null;
         let size = this.data.x.length;
         let indices = [];
         for (let i = 0; i < size; i++) {
@@ -116,18 +118,8 @@ class SST {
                 }
             }
             if (config.op.showNonMatchingCluster) {
-                try {
-                    let op = this.bee.op;
-                    if (!op.data.op_nomatching_cluster_ids.includes(this.data.cluster_id[ind])) {
-                        continue;
-                    }
-                    else {
-                        // console.log(op_cluster_ids, this.data.cluster_id[ind]);
-                    }
-                }
-                catch (err) {
-                    // console.log(err);
-                }
+                // show only clusters matched to NO flash (skip any that are matched)
+                if (matchedSet.has(Number(this.data.cluster_id[ind]))) { continue; }
             }
             else if (config.op.showMatchingCluster) {
                 try {

@@ -226,7 +226,7 @@ class Gui {
                 this.bee.op.draw();
                 if (value) {
                     this.store.dom.el_statusbar.html(
-                        'non-matching: ' + this.bee.op.op_nomatching_cluster_ids
+                        'non-matching: ' + this.bee.op.nonMatchingIds()
                     );
                 }
             });
