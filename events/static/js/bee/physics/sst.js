@@ -211,13 +211,18 @@ class SST {
     // shifted in global x by -driftV*t*driftDir(tpc) so it lands where its
     // (now-fixed) box sits.
     //
-    // The drift direction needs the cluster's TRUE TPC. Position alone cannot supply
-    // it: an unknown T0 can slide a TPC0 cluster's reconstructed x across the cathode
-    // into TPC1's box, and x is both the only axis that separates the SBND TPCs and
-    // the only axis the T0 corrupts -- so tpcOf(point) would mis-read it as TPC1 and
-    // "correct" it the wrong way. We therefore prefer the optical match: the `apa` of
-    // the flash a cluster matched to is its true TPC (authoritative, position-free).
-    // tpcOf() remains the fallback for charge not matched to any flash.
+    // Both inputs come from the cluster's OWN matched flash (op.clusterFlashMap), so
+    // every matched cluster sits at its true location at once -- not just the current
+    // flash's:
+    //   * time   -- the matched flash's op_t. A cathode crosser whose charge has no
+    //               flash on its side matched the OTHER side's flash; we use that
+    //               flash's time ("from the other side of TPC"). Unmatched charge
+    //               falls back to the current flash so stepping still sweeps it.
+    //   * tpc    -- the drift direction, via exp.detectorFrameTpc(): symmetric-cathode
+    //               detectors trust the matched flash's apa (an unknown T0 can slide a
+    //               cluster across the cathode, so position cannot recover the side);
+    //               PDHD (opaque cathode, side-specific wires) takes it from the charge
+    //               position, since a crosser's light side is NOT its charge side.
     drawDetectorFrame() {
         let exp = this.store.experiment;
         let op = this.bee.op;
@@ -226,13 +231,18 @@ class SST {
             if (this.pointCloudDetector != null) { scene.remove(this.pointCloudDetector); this.pointCloudDetector = null; }
             return;
         }
-        let t = op.data.op_t[op.currentFlash];
         let driftV = exp.tpc.driftVelocity;
-        let tpcMap = op.clusterTpcMap();
+        let flashMap = op.clusterFlashMap();
+        let apa = op.data.apa;
+        let opT = op.data.op_t;
+        let tFallback = opT[op.currentFlash];
         let shiftFn = (gx, gy, gz, clusterId) => {
-            let tpc = (tpcMap && tpcMap.has(Number(clusterId)))
-                ? tpcMap.get(Number(clusterId))
-                : exp.tpcOf(gx, gy, gz);
+            let id = Number(clusterId);
+            let fi = (flashMap && flashMap.has(id)) ? flashMap.get(id) : null;
+            let t = (fi != null) ? opT[fi] : tFallback;
+            let apaTpc = (fi != null && apa && apa[fi] != null) ? parseInt(apa[fi]) : null;
+            if (apaTpc != null && Number.isNaN(apaTpc)) apaTpc = null;
+            let tpc = exp.detectorFrameTpc(id, gx, gy, gz, apaTpc);
             return gx - driftV * t * exp.driftDir(tpc);
         };
         this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);

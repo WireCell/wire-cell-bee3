@@ -46,24 +46,22 @@ class OP {
         return ids;
     }
 
-    // Map cluster_id -> TPC index, taken from the optical match (authoritative,
-    // position-independent): a flash is reconstructed per TPC side, so the `apa`
-    // of the flash a cluster matched to IS that cluster's true TPC -- even when an
-    // unknown T0 has slid the reconstructed charge across the cathode into the
-    // other TPC's box. Used by the detector frame to pick the drift direction so a
-    // displaced TPC0 cluster is not mis-corrected as TPC1. Returns null when the op
-    // JSON lacks `apa`/`op_cluster_ids` (older files), so the caller can fall back
-    // to position-based tpcOf().
-    clusterTpcMap() {
+    // Map cluster_id -> the index of the flash it matched (first match wins; the
+    // members of a +-80 ns group carry ~equal times so the choice is immaterial).
+    // The matched flash is the cluster's optical anchor: it supplies the cluster's
+    // T0 (op_t) for the detector-frame correction -- even for a cathode crosser whose
+    // charge sits on the side WITHOUT a flash, so it matched the OTHER side's flash
+    // ("use the flash time from the other side of TPC") -- and, for symmetric-cathode
+    // detectors, its `apa` as the cluster's true TPC (see Experiment.detectorFrameTpc).
+    // Returns null when the op JSON lacks op_cluster_ids (older files), so the caller
+    // falls back to the current flash.
+    clusterFlashMap() {
         let cids = this.data.op_cluster_ids;
-        let apa = this.data.apa;
-        if (!cids || !apa) return null;
+        if (!cids) return null;
         let map = new Map();
         for (let i = 0; i < cids.length; i++) {
-            if (!cids[i] || apa[i] == null) continue;
-            let tpc = parseInt(apa[i]);
-            if (Number.isNaN(tpc)) continue;
-            for (let c of cids[i]) { map.set(Number(c), tpc); }
+            if (!cids[i]) continue;
+            for (let c of cids[i]) { let k = Number(c); if (!map.has(k)) map.set(k, i); }
         }
         return map;
     }

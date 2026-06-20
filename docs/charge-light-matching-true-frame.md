@@ -315,3 +315,54 @@ charge not matched to any flash (and for op JSONs lacking `apa`).
 **Limitation:** corrects only clusters matched to a flash (the matching workflow this
 panel serves). Fully general coverage of unmatched charge would need a per-point
 `tpc`/`face` tag added to the producer's Bee writer and reprocessed data.
+
+## 14. Fix — PDHD opaque cathode: direction from charge, time from the matched flash
+
+§13's apa-for-direction rule is correct for SBND (symmetric cathode: an unknown T0
+slides a *single-TPC* cluster across the cathode, and the per-side flash recovers the
+true side). It is **wrong for PDHD**, whose cathode is opaque and whose wires are
+side-specific. Two facts change:
+
+1. **The charge side is unambiguous from position.** PDHD's wires belong to one drift
+   volume, so a cluster reconstructs in its true box; `tpcOf(reco)` *is* the charge
+   side. (It can only mislead if the T0 is so wrong that reco x itself crosses the
+   cathode — a cluster that is visibly broken regardless.)
+2. **A cathode crosser's light side ≠ its charge side.** The opaque cathode means a
+   −x track lights only −x PDs. A track that crosses the cathode deposits charge on
+   *both* sides but its segment on the side without a flash matches the **other**
+   side's flash. Run-29107 evt-983 cluster 22 is the canonical case: −x charge
+   (recoX≈−295) matched the +x flash 16 (`op_cluster_ids[16] = [22, 92, 93]`; 92/93
+   are the +x charge). Using flash 16's `apa` (=+x) for the drift direction drives 22
+   to x≈−580 (off the detector); using its **charge** side snaps it to the cathode
+   (x≈−10), where a crosser belongs.
+
+So PDHD takes the drift **direction** from the charge position and only the **time**
+from the matched flash — including, for a no-flash-on-its-side segment, the flash on
+*the other side of the TPC*.
+
+This also generalises the **time**: `drawDetectorFrame` previously shifted *every*
+cluster by the single `currentFlash` time, so only the current flash's clusters sat
+right. It now shifts each matched cluster by **its own** matched-flash time, so all
+matched clusters sit at their true location at once; unmatched charge keeps the
+`currentFlash` fallback and still sweeps as you step.
+
+| File | Change |
+|---|---|
+| `physics/op.js` | `clusterTpcMap()` → `clusterFlashMap()` — `cluster_id → matched flash index` (first match), giving both that flash's `op_t` (time) and `apa` (side). |
+| `physics/experiment.js` | new `Experiment.detectorFrameTpc(id, gx,gy,gz, apaTpc)` — base returns `apaTpc ?? tpcOf` (SBND rule, §13 unchanged); `ProtoDUNEHD` overrides to `tpcOf` (charge side). |
+| `physics/sst.js` | `drawDetectorFrame` shifts each cluster by its matched-flash time and `exp.detectorFrameTpc(...)` direction; `currentFlash` time + `tpcOf` remain the unmatched-charge fallback. |
+
+**Surgical proof.** For PDHD, `driftDir(tpcOf(reco))` and `driftDir(apa)` *agree* for
+every non-cross-side match (a normal −x cluster matches a −x flash → both give the
+same direction). They diverge **only** for the cross-cathode-matched clusters, where
+`tpcOf` is the correct one — so the change leaves every normal cluster byte-identical.
+On evt-983 (36 matched clusters) exactly 10 diverge; the lone genuine two-sided
+crosser (cluster 22) snaps to the cathode, and several implausible single cross-side
+matches (whose flash T0 implies a drift longer than the 353 cm drift length) now show
+**off the detector box** instead of faked onto the wrong anode — the honest signal a
+mis-match deserves in a panel whose job (§11) is to *diagnose* the matching.
+
+**SBND unchanged** — the base `detectorFrameTpc` keeps §13's apa rule, so e7f0bc5's
+SBND behavior is byte-identical. **PDVD** has the same opaque cathode and almost
+certainly wants the same override, but it is not validated on this event; left as a
+follow-up rather than shipped blind.
