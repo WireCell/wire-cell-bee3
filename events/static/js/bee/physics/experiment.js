@@ -138,18 +138,6 @@ class Experiment {
         return best;
     }
 
-    // Which TPC's drift direction to use when T0-correcting a *matched* cluster in
-    // the detector-frame side panel. Default (symmetric cathode, e.g. SBND): trust
-    // the matched flash's apa (`apaTpc`) as the true TPC -- an unknown T0 can slide a
-    // cluster's reconstructed x across the cathode into the wrong box, so position
-    // alone cannot recover the side, but the per-side flash can. Falls back to the
-    // charge position when the cluster matched no flash (apaTpc == null). ProtoDUNEHD
-    // overrides this: its opaque cathode + side-specific wires make the charge side
-    // unambiguous from position.
-    detectorFrameTpc(clusterId, gx, gy, gz, apaTpc) {
-        return apaTpc != null ? apaTpc : this.tpcOf(gx, gy, gz);
-    }
-
 }
 
 
@@ -948,18 +936,6 @@ class ProtoDUNEHD extends Experiment {
 
     // Each photon detector sits on an APA face; map it to that APA's TPC box.
     opTPC(i) { let l = this.op.location[i]; return this.tpcOf(l[0], l[1], l[2]); }
-
-    // Detector-frame drift direction from the CHARGE position, not the matched flash.
-    // PDHD's cathode is opaque and its wires are side-specific, so a cluster's drift
-    // volume is fixed unambiguously by where its charge reconstructs. A cathode-
-    // crossing track, however, matches the OTHER side's flash (its light side != its
-    // charge side): e.g. evt-983 cluster 22 is -x charge (recoX~-295) matched to the
-    // +x flash 16. Using that flash's apa (the SBND rule) would drive it to x~-580
-    // (off the detector); using its charge side snaps it to the cathode (x~0). The
-    // matched flash still supplies the T0 (op_t) -- only the direction comes from here.
-    detectorFrameTpc(clusterId, gx, gy, gz, apaTpc) {
-        return this.tpcOf(gx, gy, gz);
-    }
 
     // SP channel direction on the readout face (channel-vs-Z table):
     //   nominal face: U=+Z, V=-Z, W=+Z   ->  mirror V
