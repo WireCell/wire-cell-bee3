@@ -221,10 +221,16 @@ class SST {
         let t = op.data.op_t[op.currentFlash];
         let driftV = exp.tpc.driftVelocity;
         let tpcMap = op.clusterTpcMap();
+        // Optional detector-specific per-cluster {tpc, t} override (PDHD associates a
+        // cluster with the TPC that keeps its T0-corrected charge inside the detector,
+        // and uses its matched flash's own time). null -> baseline: apa direction +
+        // current-flash time.
+        let corr = exp.detectorFrameCorrection(this, op);
         let shiftFn = (gx, gy, gz, clusterId) => {
-            let tpc = (tpcMap && tpcMap.has(Number(clusterId)))
-                ? tpcMap.get(Number(clusterId))
-                : exp.tpcOf(gx, gy, gz);
+            let id = Number(clusterId);
+            let c = corr && corr.get(id);
+            if (c) { return gx - driftV * c.t * exp.driftDir(c.tpc); }
+            let tpc = (tpcMap && tpcMap.has(id)) ? tpcMap.get(id) : exp.tpcOf(gx, gy, gz);
             return gx - driftV * t * exp.driftDir(tpc);
         };
         this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);

@@ -315,3 +315,43 @@ charge not matched to any flash (and for op JSONs lacking `apa`).
 **Limitation:** corrects only clusters matched to a flash (the matching workflow this
 panel serves). Fully general coverage of unmatched charge would need a per-point
 `tpc`/`face` tag added to the producer's Bee writer and reprocessed data.
+
+## 14. Fix — PDHD opaque cathode: associate a cluster with its TPC, time from its matched flash
+
+§13's "TPC from the matched flash's `apa`" rule is correct for SBND but wrong for PDHD,
+whose cathode is opaque and whose wires are side-specific. Two PDHD facts break it:
+
+1. **A cathode crosser's light side ≠ its charge side.** A −x track lights only −x PDs,
+   so a cluster whose charge has no flash on its own side matches the **other** side's
+   flash. Using that flash's `apa` for the drift direction sends the cluster off the
+   detector. (evt-983 cluster 22: −x charge, matched +x flash 16 → apa gives +x → x≈−580.)
+2. **The reco-x sign is not the charge side either.** A large T0 slides the *uncorrected*
+   reco-x clear across the cathode, so a single −x cluster can have most of its reco-x on
+   the +x side. (evt-983 cluster 35: associated with −x, but reco-x centroid is +22.8 cm,
+   and its reco-x spans [−177, +119] — it only *looks* two-sided in the uncorrected panel.)
+
+The robust rule uses neither: a cluster is **associated with one TPC** (the anode whose
+wires read it), and the whole cluster is **rigidly translated** by that TPC's drift
+direction. We recover the association by **physical placement** — at the matched flash's
+time, try both drift directions and keep the one whose corrected charge lands inside a
+real TPC box (apa breaks a tie). The **time** is always the cluster's own matched flash,
+including the other side's flash when its own side has none.
+
+This both (a) keeps every cluster intact on its own TPC — never split across the cathode,
+the bug the reverted attempts introduced — and (b) places all matched clusters at their
+true location at once (each by its own flash time, not the single current flash).
+
+| File | Change |
+|---|---|
+| `physics/experiment.js` | base `detectorFrameCorrection()` returns `null` (baseline = §13 apa + current-flash time, **SBND byte-identical**); `ProtoDUNEHD` overrides it: per cluster, pick the drift side with fewer out-of-box points at the matched-flash time (apa tiebreak), time = matched flash. |
+| `physics/sst.js` | `drawDetectorFrame` applies the per-cluster `{tpc, t}` override when present, else the §13 baseline. |
+
+**Validation (run 29107 evt 983, 36 matched clusters).** Every cluster resolves to its
+physically-consistent side. Only cluster 22 differs from the §13 apa side (its flash is
+the other side's) — it now lands at the cathode ([−19, 1] cm) instead of off-detector.
+Cluster 35 stays whole on −x ([−311, −15] cm). Unmatched charge keeps the §13 fallback.
+
+**Supersedes** the reverted commits dd33f79 (per-point charge position — split straddling
+clusters) and f6196a7 (per-cluster reco-x centroid — wrong TPC under a large T0). **PDVD**
+has the same opaque cathode and likely wants the same override; not validated here, left
+as a follow-up.

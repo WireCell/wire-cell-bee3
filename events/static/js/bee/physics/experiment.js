@@ -138,6 +138,12 @@ class Experiment {
         return best;
     }
 
+    // Optional per-cluster {tpc, t} override for the detector-frame T0 correction,
+    // keyed by cluster_id. null (the default) means use the baseline: drift direction
+    // from the matched flash's apa (clusterTpcMap) and the current flash's time.
+    // ProtoDUNEHD overrides this -- see its detectorFrameCorrection.
+    detectorFrameCorrection(sst, op) { return null; }
+
 }
 
 
@@ -936,6 +942,60 @@ class ProtoDUNEHD extends Experiment {
 
     // Each photon detector sits on an APA face; map it to that APA's TPC box.
     opTPC(i) { let l = this.op.location[i]; return this.tpcOf(l[0], l[1], l[2]); }
+
+    // Detector-frame T0 correction for PDHD's opaque cathode + side-specific wires.
+    //
+    // A cluster is ASSOCIATED with one TPC (the anode whose wires read its charge),
+    // and the whole cluster is rigidly translated by that TPC's drift direction. The
+    // association is NOT the matched flash's apa (a cathode crosser's −x charge has no
+    // −x flash, so it matches the +x flash — light side ≠ charge side), and it is NOT
+    // the reco-x sign (a large T0 slides the uncorrected reco-x across the cathode, so
+    // e.g. evt-983 cluster 35 is −x but its reco-x centroid is +x). Instead we pick the
+    // side whose T0-corrected charge lands INSIDE a physical TPC: try both drift
+    // directions at the matched flash's time and choose the one with fewer out-of-box
+    // points (apa breaks a tie). The time is always the matched flash's own — including
+    // the OTHER side's flash when the cluster's own side has none (cluster 22).
+    detectorFrameCorrection(sst, op) {
+        let cids = op.data.op_cluster_ids, apa = op.data.apa, opT = op.data.op_t;
+        if (!cids || !apa) return null;
+        // cluster_id -> its matched flash index (first match wins) -> its t0
+        let flash = new Map();
+        for (let i = 0; i < cids.length; i++) {
+            if (!cids[i]) continue;
+            for (let c of cids[i]) { let k = Number(c); if (!flash.has(k)) flash.set(k, i); }
+        }
+        // gather each matched cluster's reco-x points
+        let xs = new Map();
+        let cl = sst.data.cluster_id, X = sst.data.x;
+        for (let i = 0; i < X.length; i++) {
+            let k = Number(cl[i]);
+            if (!flash.has(k)) continue;
+            let a = xs.get(k); if (!a) { a = []; xs.set(k, a); }
+            a.push(X[i]);
+        }
+        // physical drift length: cathode (x=0) to anode |x|, from the box geometry
+        let L = 0;
+        for (let i = 0; i < this.nTPC(); i++) { L = Math.max(L, Math.abs(this.center(i)[0]) + this.halfXYZ(i)[0]); }
+        let tol = 5, driftV = this.tpc.driftVelocity;
+        let out = new Map();
+        for (let [k, fi] of flash) {
+            let t = opT[fi], pts = xs.get(k) || [];
+            let badMinus = 0, badPlus = 0;     // out-of-box counts under each side
+            for (let v of pts) {
+                let xm = v - driftV * t * (+1);  // −x TPC (driftDir +1): valid [−L, tol]
+                let xp = v - driftV * t * (-1);  // +x TPC (driftDir −1): valid [−tol, L]
+                if (xm < -L - tol || xm > tol) badMinus++;
+                if (xp > L + tol || xp < -tol) badPlus++;
+            }
+            let n = pts.length || 1, fm = badMinus / n, fp = badPlus / n;
+            let side;
+            if (Math.abs(fm - fp) < 0.05) { side = (parseInt(apa[fi]) === 0) ? -1 : 1; }
+            else { side = fm < fp ? -1 : 1; }
+            // a −x TPC is an even index (driftDir +1); a +x TPC is odd (driftDir −1)
+            out.set(k, { tpc: side < 0 ? 0 : 1, t });
+        }
+        return out;
+    }
 
     // SP channel direction on the readout face (channel-vs-Z table):
     //   nominal face: U=+Z, V=-Z, W=+Z   ->  mirror V
