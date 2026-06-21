@@ -273,7 +273,7 @@ await page.waitForTimeout(1500);
 await setupPage();
 await setCaptionPos('50%');
 // 5) Non-matched clusters on img-global (static hold, so the TPC frame stays straight).
-await beat({ seg: 'c', secs: 3.0, spin: false, settle: 400,
+await beat({ seg: 'c', secs: 4.0, spin: false, settle: 400,
   caption: 'Non-matched clusters',
   setup: async () => { await pick('img-global'); await setMaterial({ charge: false, cluster: true }); await nonMatchingOn(); await ev(() => window.bee.scene3d.resetCamera()); await page.waitForTimeout(500); } });
 // 6) W view across the cathode + arrows on cathode-crossing clusters.
@@ -289,11 +289,12 @@ const nArrows = await (async () => {
 // cathode horizontal), matching the native "W" button. A non-zero turntable angle would
 // spin the box in-plane and make it look crooked.
 angle = 0;
-await beat({ seg: 'c', secs: 3.0, spin: false,
-  caption: 'Clustering across the cathode plane after T0 correction' });
+await beat({ seg: 'c', secs: 6.0, spin: false,
+  caption: 'Clustering across the cathode plane after T0 correction',
+  step: () => recolor(), stepEvery: 1.0 });              // gradual 'o' recolor in the W view
 console.log(`arrows placed: ${nArrows}`);
-// 7) Final rotating 3-D, clusters only — long hold (3x), gradually pressing 'o' to recolor.
-await beat({ seg: 'c', secs: 15.0, spin: true, settle: 600,
+// 7) Final rotating 3-D, clusters only — gradually pressing 'o' to recolor.
+await beat({ seg: 'c', secs: 6.0, spin: true, settle: 600,
   caption: 'Final T0-corrected clusters',
   step: () => recolor(), stepEvery: 1.2,                 // a slow 'o' recolor every ~1.2 s
   setup: async () => { await clearArrows(); await resetTilt(); await setMaterial({ charge: false, cluster: true }); await page.waitForTimeout(500); } });

@@ -16,7 +16,7 @@ straight from the Bee viewer — no Bee code changed.
 - **`make_sidepanel_video.mjs`** / **`sidepanel.mp4`** / **`sidepanel.srt`** — a third
   worked example: the detector-frame **side panel** + matched-cluster stepping (see below).
 - **`29107_983_QL_matching.mp4`** — the **combined cut** used for talks:
-  `clustering.mp4` then `sidepanel.mp4` concatenated (≈102 s, stream-copied, no re-encode).
+  `clustering.mp4` then `sidepanel.mp4` concatenated (≈97 s, stream-copied, no re-encode).
 
 ## Run / re-render
 
@@ -83,7 +83,7 @@ stepEvery, arrows, flat }`), so it's easy to retime, retext, or split into separ
 
 ## Third example: detector-frame side panel (`make_sidepanel_video.mjs`)
 
-A ~77 s clip walking the charge–light **matching** itself (Run 29107, Event 983), driving
+A ~72 s clip walking the charge–light **matching** itself (Run 29107, Event 983), driving
 the same viewer:
 
 1. `img-global` → **Show Charge** → **Show Cluster**, then enable the **side panel**
@@ -95,8 +95,9 @@ the same viewer:
    (no Bee change), 2 s each: **red** = measured light pattern, **green** = predicted by charge.
 4. `img-global` **Non-matching** (`config.op.showNonMatchingCluster`) — clusters matched
    to no flash. Then **clustering-global** in the **`W` view** (`bee.scene3d.xwView()`),
-   drift X vertical, with arrows on the cathode-crossing clusters. A long (~15 s) rotating
-   finale gradually presses **`o`** (`bee.redrawAllSST(true)`) to recolor the clusters.
+   drift X vertical, with arrows on the cathode-crossing clusters. Both this W-view scene
+   and the rotating finale gradually press **`o`** (`bee.redrawAllSST(true)`) to recolor
+   the clusters.
 
 ```bash
 node make_sidepanel_video.mjs                            # writes sidepanel.mp4 (+ .srt)

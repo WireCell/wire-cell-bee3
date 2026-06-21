@@ -26,13 +26,13 @@ Red: measured light pattern
 Green: predicted light pattern by charge   (subset of matches)
 
 7
-00:00:56,400 --> 00:00:59,400
+00:00:56,400 --> 00:01:00,400
 Non-matched clusters
 
 8
-00:00:59,400 --> 00:01:02,400
+00:01:00,400 --> 00:01:06,400
 Clustering across the cathode plane after T0 correction
 
 9
-00:01:02,400 --> 00:01:17,400
+00:01:06,400 --> 00:01:12,400
 Final T0-corrected clusters
