@@ -11,6 +11,8 @@ straight from the Bee viewer — no Bee code changed.
   subtitle track, and calls ffmpeg to assemble the mp4.
 - **`subs.srt`** — generated subtitle cues (edit to retime/retext without re-rendering).
 - **`charge_light.mp4`** — the rendered clip, captions burned in.
+- **`make_clustering_video.mjs`** / **`clustering.mp4`** — a second, simpler worked
+  example (see below).
 
 ## Run / re-render
 
@@ -41,3 +43,33 @@ parent guide's "Lessons learned" box):
 
 This `make_video.mjs` is a copy committed for reference; render it from any scratch dir
 (keep `node_modules/` and `frames/` out of the repo).
+
+## Second example: clustering reveal (`make_clustering_video.mjs`)
+
+A shorter (~18 s) clip that walks one APA group at a time through the build-up of a
+clustering result, driving the same viewer:
+
+- **clustering-group02** (APA0 & APA2): raw 3-D imaging points → **Show Charge**
+  (charge-weighted) → **Show Cluster** (per-cluster colors) → slow `o` recolor.
+- **clustering-group13** (APA1 & APA3): straight to the cluster view, then recolor.
+
+```bash
+node make_clustering_video.mjs                            # writes clustering.mp4
+```
+
+Viewer hooks it relies on (beyond the ones above):
+
+- The **Show Charge** / **Show Cluster** GUI checkboxes are the booleans
+  `config.material.showCharge` / `config.material.showCluster`; toggling them in code
+  means setting the flag and calling **`bee.redrawAllSST()`** (what the GUI does
+  `onChange`). Both false → uniform-color imaging points; charge → charge-weighted HSL;
+  cluster (overrides charge) → per-cluster colors.
+- The **`o`** hot-key is `bee.redrawAllSST(true)` (random per-cluster recolor).
+- To show **one layer at a time**, set `config.material.overlay = false`, then
+  `bee.sst.list['<name>'].selected()` — that zeroes the opacity of every other loaded
+  layer, so switching from group02 to group13 hides group02 automatically (no explicit
+  "close" needed). The hidden state survives `redrawAllSST` because opacity is stored
+  per layer.
+
+Built from the same modular `BEATS` array (`{ caption, secs, spin, setup, step,
+stepEvery }`), so it's easy to retime, retext, or split into separate clips.
