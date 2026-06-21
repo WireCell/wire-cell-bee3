@@ -1,0 +1,38 @@
+1
+00:00:00,000 --> 00:00:02,200
+ProtoDUNE-HD charge–light matching
+3-D imaging · charge reconstructed
+
+2
+00:00:02,200 --> 00:00:04,400
+Per-cluster colors after clustering
+
+3
+00:00:04,400 --> 00:00:07,400
+Charge–light matching · detector-frame side panel
+
+4
+00:00:07,400 --> 00:00:22,400
+Left: actual measurement   ·   Right: T0-corrected positions
+Many cathode-crossing tracks   (subset of matches)
+
+5
+00:00:22,400 --> 00:00:26,400
+Detector frame (T0-corrected) — light pattern per flash
+
+6
+00:00:26,400 --> 00:00:56,400
+Red: measured light pattern
+Green: predicted light pattern by charge   (subset of matches)
+
+7
+00:00:56,400 --> 00:00:59,400
+Non-matched clusters
+
+8
+00:00:59,400 --> 00:01:02,400
+Clustering across the cathode plane after T0 correction
+
+9
+00:01:02,400 --> 00:01:17,400
+Final T0-corrected clusters

@@ -528,6 +528,13 @@ the captions on/off. Edit `subs.srt` by hand to retime/retext without re-renderi
 - `charge_light.mp4` — the rendered ~28 s clip (Run 29107, Event 983): hero turntable
   of the full cluster cloud → img-global → optical flashes matched → step matched
   flashes → side-by-side true-detector frame → per-cluster recolor.
+- `make_clustering_video.mjs` / `clustering.mp4` — clustering-reveal example
+  (group02 → group13, then arrows showing clusters across adjacent APAs).
+- `make_sidepanel_video.mjs` / `sidepanel.mp4` — detector-frame **side panel** + matched
+  flash stepping (reco vs T0-corrected), right-half detector loop (measured-red /
+  predicted-green light), non-matching clusters, and the straight `W` view with
+  cathode-crossing arrows. See `charge-light-video/README.md` for the viewer hooks.
+- `29107_983_QL_matching.mp4` — the combined cut (`clustering.mp4` + `sidepanel.mp4`).
 - `README.md` — one-paragraph run instructions.
 
 Setup is just (in any scratch dir, kept out of this repo):
