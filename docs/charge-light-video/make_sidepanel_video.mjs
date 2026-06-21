@@ -272,8 +272,9 @@ await page.waitForFunction(() => window.bee?.current_sst?.pointCloud, null, { ti
 await page.waitForTimeout(1500);
 await setupPage();
 await setCaptionPos('50%');
-// 5) Non-matched clusters on img-global (static hold, so the TPC frame stays straight).
-await beat({ seg: 'c', secs: 4.0, spin: false, settle: 400,
+// 5) Non-matched clusters on img-global — gentle turntable from the straight default view.
+angle = 0;
+await beat({ seg: 'c', secs: 4.0, spin: true, settle: 400,
   caption: 'Non-matched clusters',
   setup: async () => { await pick('img-global'); await setMaterial({ charge: false, cluster: true }); await nonMatchingOn(); await ev(() => window.bee.scene3d.resetCamera()); await page.waitForTimeout(500); } });
 // 6) W view across the cathode + arrows on cathode-crossing clusters.
