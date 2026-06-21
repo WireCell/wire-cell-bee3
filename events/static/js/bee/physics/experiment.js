@@ -138,6 +138,12 @@ class Experiment {
         return best;
     }
 
+    // Optional per-cluster {tpc, t} override for the detector-frame T0 correction,
+    // keyed by cluster_id. null (the default) means use the baseline: drift direction
+    // from the matched flash's apa (clusterTpcMap) and the current flash's time.
+    // ProtoDUNEHD overrides this -- see its detectorFrameCorrection.
+    detectorFrameCorrection(sst, op) { return null; }
+
 }
 
 
@@ -856,25 +862,28 @@ class ProtoDUNEHD extends Experiment {
 
     constructor() {
         super('protodunehd');
-        // Boxes span cathode FV edge (|x|=2.54 cm, the WCT clustering cathode gap)
-        // to the cathode-facing collection-wire plane (x=-353.202 / +353.002 cm);
-        // y/z from the per-APA wire extents of
+        // Boxes span the physical cathode SURFACE (|x|=0.159 cm = half the
+        // 3.175 mm cpa_thick, the toolkit cpa_plane / QLMatching cathode_x) to the
+        // cathode-facing collection-wire plane (x=-353.202 / +353.002 cm = the
+        // BlobSampler xorig); y/z from the per-APA wire extents of
         // protodunehd-wires-larsoft-v1.json.bz2 (wirecell-util wires-info).
+        // (Was |x|=2.54 cm, the 1-inch clustering FV inset -- not the physical
+        // cathode -- which made cathode-crossers render ~2.4 cm "over" the box.)
         // Box index = WCT APA 0-3 (0/2 drift -x at z low/high, 1/3 drift +x).
         this.updateTPCLocation([
             // [-352.949, -1.00198, 3.6375, 603.861, -0.59375, 231.066],
             // [0.801975, 352.749, 3.6375, 603.861, -0.59375, 231.066],
             // [-352.949, -1.00198, 3.6375, 603.861, 231.466, 463.126],
             // [0.801975, 352.749, 3.6375, 603.861, 231.466, 463.126]
-            [-353.202, -2.54, 7.61, 606.67, -0.10, 230.573],
-            [2.54, 353.002, 7.61, 606.67, -0.10, 230.573],
-            [-353.202, -2.54, 7.61, 606.67, 231.96, 462.633],
-            [2.54, 353.002, 7.61, 606.67, 231.96, 462.633]
+            [-353.202, -0.159, 7.61, 606.67, -0.10, 230.573],
+            [0.159, 353.002, 7.61, 606.67, -0.10, 230.573],
+            [-353.202, -0.159, 7.61, 606.67, 231.96, 462.633],
+            [0.159, 353.002, 7.61, 606.67, 231.96, 462.633]
         ]);
 
         this.tpc.viewAngle = [-35.7, 35.7, 0];
         this.updateBoxROI([-200, 0, 250, 500, 0, 500]);
-        this.tpc.driftVelocity = 0.1565; // cm/us — matches toolkit drift_speed 1.565 mm/us (cfg/.../pdhd/clus.jsonnet; was 0.16=1.6mm/us pre-calibration)
+        this.tpc.driftVelocity = 0.1576; // cm/us — matches toolkit drift_speed 1.576 mm/us (cfg/.../pdhd/clus.jsonnet; top cathode crosser just inside cathode, n=4 evt-983; was 0.1580/0.1585 over-shot cathode, 0.1565=1.565, 0.16=1.6)
         this.daq.timeBeforeTrigger = 500 * 0.5; //us
         this.daq.timeAfterTrigger = 5500 * 0.5; //us
         this.beam.dir = [-0.178177, -0.196387, 0.959408];
@@ -933,6 +942,60 @@ class ProtoDUNEHD extends Experiment {
 
     // Each photon detector sits on an APA face; map it to that APA's TPC box.
     opTPC(i) { let l = this.op.location[i]; return this.tpcOf(l[0], l[1], l[2]); }
+
+    // Detector-frame T0 correction for PDHD's opaque cathode + side-specific wires.
+    //
+    // A cluster is ASSOCIATED with one TPC (the anode whose wires read its charge),
+    // and the whole cluster is rigidly translated by that TPC's drift direction. The
+    // association is NOT the matched flash's apa (a cathode crosser's −x charge has no
+    // −x flash, so it matches the +x flash — light side ≠ charge side), and it is NOT
+    // the reco-x sign (a large T0 slides the uncorrected reco-x across the cathode, so
+    // e.g. evt-983 cluster 35 is −x but its reco-x centroid is +x). Instead we pick the
+    // side whose T0-corrected charge lands INSIDE a physical TPC: try both drift
+    // directions at the matched flash's time and choose the one with fewer out-of-box
+    // points (apa breaks a tie). The time is always the matched flash's own — including
+    // the OTHER side's flash when the cluster's own side has none (cluster 22).
+    detectorFrameCorrection(sst, op) {
+        let cids = op.data.op_cluster_ids, apa = op.data.apa, opT = op.data.op_t;
+        if (!cids || !apa) return null;
+        // cluster_id -> its matched flash index (first match wins) -> its t0
+        let flash = new Map();
+        for (let i = 0; i < cids.length; i++) {
+            if (!cids[i]) continue;
+            for (let c of cids[i]) { let k = Number(c); if (!flash.has(k)) flash.set(k, i); }
+        }
+        // gather each matched cluster's reco-x points
+        let xs = new Map();
+        let cl = sst.data.cluster_id, X = sst.data.x;
+        for (let i = 0; i < X.length; i++) {
+            let k = Number(cl[i]);
+            if (!flash.has(k)) continue;
+            let a = xs.get(k); if (!a) { a = []; xs.set(k, a); }
+            a.push(X[i]);
+        }
+        // physical drift length: cathode (x=0) to anode |x|, from the box geometry
+        let L = 0;
+        for (let i = 0; i < this.nTPC(); i++) { L = Math.max(L, Math.abs(this.center(i)[0]) + this.halfXYZ(i)[0]); }
+        let tol = 5, driftV = this.tpc.driftVelocity;
+        let out = new Map();
+        for (let [k, fi] of flash) {
+            let t = opT[fi], pts = xs.get(k) || [];
+            let badMinus = 0, badPlus = 0;     // out-of-box counts under each side
+            for (let v of pts) {
+                let xm = v - driftV * t * (+1);  // −x TPC (driftDir +1): valid [−L, tol]
+                let xp = v - driftV * t * (-1);  // +x TPC (driftDir −1): valid [−tol, L]
+                if (xm < -L - tol || xm > tol) badMinus++;
+                if (xp > L + tol || xp < -tol) badPlus++;
+            }
+            let n = pts.length || 1, fm = badMinus / n, fp = badPlus / n;
+            let side;
+            if (Math.abs(fm - fp) < 0.05) { side = (parseInt(apa[fi]) === 0) ? -1 : 1; }
+            else { side = fm < fp ? -1 : 1; }
+            // a −x TPC is an even index (driftDir +1); a +x TPC is odd (driftDir −1)
+            out.set(k, { tpc: side < 0 ? 0 : 1, t });
+        }
+        return out;
+    }
 
     // SP channel direction on the readout face (channel-vs-Z table):
     //   nominal face: U=+Z, V=-Z, W=+Z   ->  mirror V

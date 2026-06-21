@@ -15,17 +15,17 @@ All coordinates are in **centimeters** in the **LArSoft global** frame;
 The TPC boxes were updated (previous values kept as comments in
 `experiment.js`) to span:
 
-- **x**: from the **cathode FV edge** (|x| = 2.54 cm — the cathode gap used by
-  the toolkit clustering DetectorVolumes metadata; for PDVD this is also the
-  physical cathode half-thickness, 50.8 mm / 2) out to the
+- **x**: from the **cathode** (PDHD: the physical cathode surface |x| = 0.159 cm
+  = the toolkit `cpa_plane` / QLMatching `cathode_x`; PDVD: still the |x| = 2.54 cm
+  clustering FV edge — see the per-detector sections) out to the
   **cathode-facing collection-wire plane** (where the apparent drift
   coordinate of a sampled blob point tops out at T0 = 0);
 - **y/z**: the per-anode wire extents of the toolkit's current default wire
   geometry file, dumped with `wirecell-util wires-info`.
 
 This guarantees every toolkit-sampled blob point renders inside a box and the
-drawn cathode gap matches what the clustering code uses. The toolkit sources
-of truth are:
+drawn cathode edge matches the physical cathode (PDHD) / clustering FV (PDVD).
+The toolkit sources of truth are:
 
 | Detector | Wire file (default in `params.jsonnet`) | Clustering DetectorVolumes |
 |---|---|---|
@@ -42,10 +42,10 @@ degenerate). Box index = WCT APA ident.
 
 | Box / APA | X (drift) [cm] | Y [cm] | Z (beam) [cm] |
 |---|---|---|---|
-| 0 | [−353.202, −2.54] | [7.61, 606.67] | [−0.10, 230.573] |
-| 1 | [+2.54, +353.002] | [7.61, 606.67] | [−0.10, 230.573] |
-| 2 | [−353.202, −2.54] | [7.61, 606.67] | [231.96, 462.633] |
-| 3 | [+2.54, +353.002] | [7.61, 606.67] | [231.96, 462.633] |
+| 0 | [−353.202, −0.159] | [7.61, 606.67] | [−0.10, 230.573] |
+| 1 | [+0.159, +353.002] | [7.61, 606.67] | [−0.10, 230.573] |
+| 2 | [−353.202, −0.159] | [7.61, 606.67] | [231.96, 462.633] |
+| 3 | [+0.159, +353.002] | [7.61, 606.67] | [231.96, 462.633] |
 
 Derivation (wire file `protodunehd-wires-larsoft-v1`, `wirecell-util wires-info`):
 
@@ -55,9 +55,12 @@ Derivation (wire file `protodunehd-wires-larsoft-v1`, `wirecell-util wires-info`
 - Wire active area: y ∈ [7.61, 606.67]; z ∈ [−0.10, 230.573] (APA0/1) and
   [231.96, 462.633] (APA2/3) — a real 1.39 cm no-wire gap between the APA
   pairs (the previous Bee boxes had a 0.4 cm gap).
-- Cathode gap |x| < 2.54 cm = the clustering per-face FV boundary
-  (`a0f0pA.FV_xmax = −25.4 mm` etc.). The physical cathode is only 3.175 mm
-  thick; ±2.54 cm is the toolkit FV convention, adopted here for consistency.
+- Cathode surface |x| = 0.159 cm = half the 3.175 mm `cpa_thick` (the toolkit
+  `cpa_plane`, = QLMatching `cathode_x`).  The boxes are now drawn to this
+  **physical** cathode so a cathode-crossing track sits at the box edge.
+  (Previously |x| = 2.54 cm, the 1-inch clustering per-face FV inset
+  `a0f0pA.FV_xmax = −25.4 mm` — a fiducial convention, not the cathode, which
+  made cathode-crossers render ~2.4 cm beyond the box.)
 
 Relation to the clustering FV (not used for the boxes): the overall FV is
 x ±357.985 (the APA mid-plane, ~4.8 cm *behind* the wires), y [7.61, 606.0],
