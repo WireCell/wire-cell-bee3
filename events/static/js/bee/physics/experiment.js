@@ -803,30 +803,52 @@ class ProtoDUNEVD extends Experiment {
         this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
 
-        // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 24 PMT
-        // (detType 1) = 40 channels, in PDVD_PDS_Mapping_v09162025.json channel
-        // order (cathode = channels 4-11). Representative placement in the WCT box
-        // frame (not surveyed GDML positions, which are in a frame shifted from the
-        // boxes). entry = [x, y, z, detType, orient]; orient 0/absent = face +-x
-        // (drift), 1 = face +-y (lateral wall). Cathode X-ARAPUCAs lie on the central
-        // cathode plane (x=0); membrane X-ARAPUCAs lie flat on the lateral y=+-336.4
-        // walls; PMTs sit on the bottom membrane just below the bottom CRP (x=-341.55).
+        // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 8 z-wall
+        // + 16 bottom PMT (detType 1) = 40 channels, WCT flash-chain OpDet order
+        // (== toolkit calib-dump 'pe' array order; channel roles documented in
+        // cfg/.../protodunevd/qlmatching.jsonnet). Positions below are the REAL
+        // surveyed detector-frame [cm] positions from toolkit
+        // cfg/pgrapher/experiment/protodunevd/pdvd-opdet-geom.json (data-derived,
+        // from the raw_waveform TTree x/y/z branches; matches the v5 as-built GDML
+        // and already shares this frame with the TPC boxes above -- e.g. the
+        // membrane XA z=149.65 lands exactly on the box z-split). Four bottom PMTs
+        // (24/27/28/34) are dead in data (absent from raw_waveform, never light up)
+        // so their slot is filled by mirroring the live channel across the same
+        // grid row; that position is purely cosmetic. entry = [x, y, z, detType,
+        // orient]; orient 0/absent = face +-x (drift), 1 = face +-y (lateral
+        // membrane wall), 2 = face +-z (z-end wall).
+        const vdOpPosCm = {
+            0: [305.60, 417.61, 149.65], 1: [305.60, -417.61, 149.65],
+            2: [229.00, 417.61, 149.65], 3: [229.00, -417.61, 149.65],
+            4: [0.00, 123.85, 258.525], 5: [0.00, -213.15, 258.525],
+            6: [0.00, 290.35, 187.275], 7: [0.00, -46.65, 187.275],
+            8: [0.00, 42.60, 112.025], 9: [0.00, -213.15, 112.025],
+            10: [0.00, 209.10, 40.775], 11: [0.00, -127.90, 40.775],
+            12: [-201.10, 417.61, 149.65], 13: [-201.10, -417.61, 149.65],
+            14: [-205.90, 221.00, 408.988], 15: [-205.90, -221.00, 408.988],
+            16: [-205.90, 256.00, -96.124], 17: [-205.90, -221.00, -109.688],
+            18: [-277.70, 417.61, 149.65], 19: [-277.70, -417.61, 149.65],
+            20: [-281.70, 221.00, 408.988], 21: [-281.70, -221.00, 408.988],
+            22: [-281.70, 256.00, -96.124], 23: [-281.70, -221.00, -109.688],
+            24: [-336.474, 170.00, 455.65],  // dead; mirrors ch26's row
+            25: [-336.474, 0.00, 455.65], 26: [-336.474, -170.00, 455.65],
+            27: [-336.474, 0.00, 353.65],     // dead; fills ch29's row
+            28: [-336.474, 170.00, 353.65],   // dead; fills ch29's row
+            29: [-336.474, -170.00, 353.65],
+            30: [-336.474, 405.30, 217.75], 31: [-336.474, -405.30, 217.75],
+            32: [-336.474, 405.30, 149.65], 33: [-336.474, -405.30, 149.65],
+            34: [-336.474, 170.00, -54.35],   // dead; mirrors ch36's row
+            35: [-336.474, 0.00, -54.35], 36: [-336.474, -170.00, -54.35],
+            37: [-336.474, 170.00, -156.35], 38: [-336.474, 0.00, -156.35],
+            39: [-336.474, -170.00, -156.35],
+        };
         let vdOp = {};
-        let nC = 0, nM = 0, nP = 0;
         for (let i = 0; i < 40; i++) {
-            if (i >= 4 && i <= 11) { // cathode X-ARAPUCA: x=0 plane, 2(y) x 4(z) grid, face +-x
-                let col = nC % 2, row = Math.floor(nC / 2); nC++;
-                vdOp[i] = [0.0, col == 0 ? -168 : 168, 37.5 + row * 75, 2];
-            }
-            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { // membrane X-ARAPUCA: lateral wall, face +-y
-                let wall = nM < 4 ? -336.4 : 336.4, idx = nM % 4; nM++;
-                let x = idx % 2 == 0 ? -170 : 170, z = idx < 2 ? 100 : 200;
-                vdOp[i] = [x, wall, z, 2, 1]; // orient 1 = lie flat on the y wall
-            }
-            else { // PMT: bottom membrane below the bottom CRP, x=-341.55, 4(y) x 6(z) grid, face +x
-                let yi = nP % 4, zi = Math.floor(nP / 4); nP++;
-                vdOp[i] = [-341.55, [-250, -83, 83, 250][yi], 25 + zi * 50, 1];
-            }
+            let pos = vdOpPosCm[i];
+            if (i >= 4 && i <= 11) { vdOp[i] = [...pos, 2]; } // cathode X-ARAPUCA
+            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { vdOp[i] = [...pos, 2, 1]; } // membrane X-ARAPUCA
+            else if (i >= 14 && i <= 23) { vdOp[i] = [...pos, 1, 2]; } // z-wall PMT
+            else { vdOp[i] = [...pos, 1]; } // bottom PMT
         }
         this.updateOPLocation(vdOp, 40);
         this.op.peScaling = 0.5;
