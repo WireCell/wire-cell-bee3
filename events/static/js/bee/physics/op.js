@@ -192,7 +192,8 @@ class OP {
 
             let exp = this.store.experiment;
             let [halfx, halfy, halfz] = this.store.experiment.halfXYZ(iTPC);
-            let shiftX = detectorFrame ? 0 : driftV*t*exp.driftDir(iTPC); // drift shift (0 in detector frame)
+            let tTPC = exp.flashTimeForTPC(this, iTPC); // per-TPC charge clock (PDVD top/bottom crates differ)
+            let shiftX = detectorFrame ? 0 : driftV*tTPC*exp.driftDir(iTPC); // drift shift (0 in detector frame)
             let opBox = new THREE.Mesh(
                 new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
                 new THREE.MeshBasicMaterial( {

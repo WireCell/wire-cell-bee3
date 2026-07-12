@@ -231,7 +231,8 @@ class SST {
             let c = corr && corr.get(id);
             if (c) { return gx - driftV * c.t * exp.driftDir(c.tpc); }
             let tpc = (tpcMap && tpcMap.has(id)) ? tpcMap.get(id) : exp.tpcOf(gx, gy, gz);
-            return gx - driftV * t * exp.driftDir(tpc);
+            // per-TPC charge clock (PDVD top/bottom crates differ; base = op_t)
+            return gx - driftV * exp.flashTimeForTPC(op, tpc) * exp.driftDir(tpc);
         };
         this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);
     }

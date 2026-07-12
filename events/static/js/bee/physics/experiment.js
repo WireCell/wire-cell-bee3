@@ -52,6 +52,15 @@ class Experiment {
         return ((i % 2) -0.5) * -2; // -1 or 1
     }
 
+    // Flash time (us) to use when drift-shifting TPC iTPC's boxes/PDs/charge
+    // for the current flash.  Base: the op dump's single op_t — correct for
+    // detectors whose charge crates share one readout clock.  Detectors whose
+    // crates frame readout windows independently (PDVD BDE/TDE) override this
+    // to pick the per-side clock (op_t1) for the second side.
+    flashTimeForTPC(op, iTPC) {
+        return op.data.op_t[op.currentFlash];
+    }
+
     // Whether the U/V/W projection view (index 0/1/2) must be horizontally
     // mirrored to match the signal-processing image.
     //
@@ -864,6 +873,19 @@ class ProtoDUNEVD extends Experiment {
     // Base alternating formula ((i%2)-0.5)*-2 is wrong for VD's grouped 8-anode layout.
     driftDir(i) {
         return i < 4 ? 1 : -1;
+    }
+
+    // PDVD BDE (bottom, TPC 0-3) and TDE (top, TPC 4-7) charge crates frame
+    // their readout windows independently (window starts up to ~32 us apart per
+    // event).  op_t is the flash time on the BOTTOM crate's clock; op_t1 (when
+    // the op dump carries it — toolkit QLMatching with per-input
+    // trigger_offsets) is the SAME flash on the TOP crate's clock.  Using op_t
+    // for the top volume misplaces its boxes/charge by (op_t1 − op_t)·v, up to
+    // ~4.6 cm in run 039252.  Older dumps without op_t1 fall back to op_t
+    // (previous behavior).
+    flashTimeForTPC(op, iTPC) {
+        if (iTPC >= 4 && op.data.op_t1 != null) { return op.data.op_t1[op.currentFlash]; }
+        return op.data.op_t[op.currentFlash];
     }
 
     // PDVD reverse anodes (4-7) have their U/V wire tilts swapped relative to the
