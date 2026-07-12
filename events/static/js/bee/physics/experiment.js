@@ -776,9 +776,10 @@ class ProtoDUNEVD extends Experiment {
 
     constructor() {
         super('protodunevd');
-        // Boxes span cathode FV edge (|x|=2.54 cm, the WCT clustering cathode gap;
-        // physical cathode is 50.8 mm thick at x=0) to the collection-wire plane
-        // (|x|=341.55 cm); y/z from the per-anode wire extents of
+        // Boxes span the cathode drift-facing surface (|x|=3.0 cm; physical
+        // cathode is 60 mm thick at x=0, GDML CathodeBlock -- toolkit
+        // cfg/.../protodunevd/params.jsonnet cpa_thick) to the collection-wire
+        // plane (|x|=341.55 cm); y/z from the per-anode wire extents of
         // protodunevd-wires-larsoft-v5.json.bz2 (wirecell-util wires-info).
         // z splits at the per-drift-side gap midpoints so boxes stay disjoint.
         // Box index = WCT anode 0-7 (0-3 bottom drift +x, 4-7 top drift -x).
@@ -791,17 +792,18 @@ class ProtoDUNEVD extends Experiment {
             // [3.03, 313.03, -337, 0, 149.65, 299.3],
             // [3.03, 313.03, 0, 337, 0, 149.65],
             // [3.03, 313.03, 0, 337, 149.65, 299.3]
-            [-341.55, -2.54, -336.4, -0.6, 0.855, 149.82],
-            [-341.55, -2.54, -336.4, -0.6, 149.82, 298.445],
-            [-341.55, -2.54, 0.6, 336.4, 0.855, 149.82],
-            [-341.55, -2.54, 0.6, 336.4, 149.82, 298.445],
-            [2.54, 341.55, -336.4, -0.6, -0.36, 149.65],
-            [2.54, 341.55, -336.4, -0.6, 149.65, 300.0],
-            [2.54, 341.55, 0.6, 336.4, -0.36, 149.65],
-            [2.54, 341.55, 0.6, 336.4, 149.65, 300.0]
+            [-341.55, -3.0, -336.4, -0.6, 0.855, 149.82],
+            [-341.55, -3.0, -336.4, -0.6, 149.82, 298.445],
+            [-341.55, -3.0, 0.6, 336.4, 0.855, 149.82],
+            [-341.55, -3.0, 0.6, 336.4, 149.82, 298.445],
+            [3.0, 341.55, -336.4, -0.6, -0.36, 149.65],
+            [3.0, 341.55, -336.4, -0.6, 149.65, 300.0],
+            [3.0, 341.55, 0.6, 336.4, -0.36, 149.65],
+            [3.0, 341.55, 0.6, 336.4, 149.65, 300.0]
         ]);
         this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
+        this.tpc.driftVelocity = 0.1568; // cm/us — matches toolkit drift_speed 1.568 mm/us (cfg/.../protodunevd/params.jsonnet; crosser calib, D=338.55 cm after cathode 50.8->60 mm correction)
 
         // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 8 z-wall
         // + 16 bottom PMT (detType 1) = 40 channels, WCT flash-chain OpDet order
