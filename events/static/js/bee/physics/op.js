@@ -183,7 +183,6 @@ class OP {
         let t = this.data.op_t[currentFlash];
         let pes = this.combinedPes(members, 'op_pes');
         let pes_pred = this.combinedPes(members, 'op_pes_pred');
-        let driftV = this.store.experiment.tpc.driftVelocity;
         let lastBoxhelper = null, lastHalfx = 0;
 
         for (let iTPC=0; iTPC<this.store.experiment.nTPC(); iTPC++) {
@@ -193,7 +192,7 @@ class OP {
             let exp = this.store.experiment;
             let [halfx, halfy, halfz] = this.store.experiment.halfXYZ(iTPC);
             let tTPC = exp.flashTimeForTPC(this, iTPC); // per-TPC charge clock (PDVD top/bottom crates differ)
-            let shiftX = detectorFrame ? 0 : driftV*tTPC*exp.driftDir(iTPC); // drift shift (0 in detector frame)
+            let shiftX = detectorFrame ? 0 : exp.driftVelocityForTPC(iTPC)*tTPC*exp.driftDir(iTPC); // drift shift (0 in detector frame)
             let opBox = new THREE.Mesh(
                 new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
                 new THREE.MeshBasicMaterial( {

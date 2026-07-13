@@ -219,7 +219,6 @@ class SST {
             return;
         }
         let t = op.data.op_t[op.currentFlash];
-        let driftV = exp.tpc.driftVelocity;
         let tpcMap = op.clusterTpcMap();
         // Optional detector-specific per-cluster {tpc, t} override (PDHD associates a
         // cluster with the TPC that keeps its T0-corrected charge inside the detector,
@@ -229,10 +228,10 @@ class SST {
         let shiftFn = (gx, gy, gz, clusterId) => {
             let id = Number(clusterId);
             let c = corr && corr.get(id);
-            if (c) { return gx - driftV * c.t * exp.driftDir(c.tpc); }
+            if (c) { return gx - exp.driftVelocityForTPC(c.tpc) * c.t * exp.driftDir(c.tpc); }
             let tpc = (tpcMap && tpcMap.has(id)) ? tpcMap.get(id) : exp.tpcOf(gx, gy, gz);
-            // per-TPC charge clock (PDVD top/bottom crates differ; base = op_t)
-            return gx - driftV * exp.flashTimeForTPC(op, tpc) * exp.driftDir(tpc);
+            // per-TPC charge clock + drift speed (PDVD crates/volumes differ; base = op_t / tpc.driftVelocity)
+            return gx - exp.driftVelocityForTPC(tpc) * exp.flashTimeForTPC(op, tpc) * exp.driftDir(tpc);
         };
         this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, shiftFn);
     }

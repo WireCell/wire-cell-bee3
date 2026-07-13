@@ -176,7 +176,7 @@ drawn detector. The 2026-06 update also set the cathode gap to 2.54 cm
 | PDVD anode (W-plane) x | ±341.55 (wire file v5) | box edges, exact |
 | PDVD cathode gap | ±3.0 (60 mm GDML cathode; clus.jsonnet FV, 2026-07 correction) | box edges, exact |
 | PDVD y/z extents | wire file v5 per-anode extents | box edges, exact (z split at per-side gap midpoint) |
-| Drift velocity | PDHD 1.576 / PDVD 1.568 mm/µs (crosser-calibrated, clus.jsonnet/params.jsonnet) | 0.1576 / 0.1568 cm/µs (both explicit in `experiment.js`) |
+| Drift velocity | PDHD 1.576 (crosser-calibrated, clus.jsonnet) / PDVD 1.586 mm/µs (cathode-pinned convention velocity, data-reco callers; pdvd-anode-time-consistency.md §8.12 — toolkit params.jsonnet default stays 1.568) | 0.1576 / 0.1586 cm/µs (both explicit in `experiment.js`; per-TPC hook `driftVelocityForTPC`) |
 
 Neither detector has per-event T0 (time_offset = 0 in the toolkit), so blob x
 is the apparent drift position; the box x ranges above are exactly the

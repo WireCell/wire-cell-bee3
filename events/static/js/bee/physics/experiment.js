@@ -52,6 +52,14 @@ class Experiment {
         return ((i % 2) -0.5) * -2; // -1 or 1
     }
 
+    // Drift velocity (cm/us) for TPC iTPC.  Base: the experiment's single
+    // tpc.driftVelocity — correct for detectors whose drift volumes share one
+    // calibrated speed.  Detectors calibrated per volume override this,
+    // mirroring driftDir/flashTimeForTPC.
+    driftVelocityForTPC(iTPC) {
+        return this.tpc.driftVelocity;
+    }
+
     // Flash time (us) to use when drift-shifting TPC iTPC's boxes/PDs/charge
     // for the current flash.  Base: the op dump's single op_t — correct for
     // detectors whose charge crates share one readout clock.  Detectors whose
@@ -812,7 +820,7 @@ class ProtoDUNEVD extends Experiment {
         ]);
         this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
-        this.tpc.driftVelocity = 0.1568; // cm/us — matches toolkit drift_speed 1.568 mm/us (cfg/.../protodunevd/params.jsonnet; crosser calib, D=338.55 cm after cathode 50.8->60 mm correction)
+        this.tpc.driftVelocity = 0.1586; // cm/us — cathode-pinned convention velocity 1.586 mm/us matching the PDVD data-reco callers (wcp-porting pdvd/run_clus_evt.sh; pdvd-anode-time-consistency.md 8.12: gauss signal stop pinned to the cathode surface, both volumes common). Toolkit params.jsonnet default stays the legacy 1.568.
 
         // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 8 z-wall
         // + 16 bottom PMT (detType 1) = 40 channels, WCT flash-chain OpDet order
