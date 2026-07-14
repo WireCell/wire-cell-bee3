@@ -820,7 +820,7 @@ class ProtoDUNEVD extends Experiment {
         ]);
         this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
-        this.tpc.driftVelocity = 0.1586; // cm/us — cathode-pinned convention velocity 1.586 mm/us matching the PDVD data-reco callers (wcp-porting pdvd/run_clus_evt.sh; pdvd-anode-time-consistency.md 8.12: gauss signal stop pinned to the cathode surface, both volumes common). Toolkit params.jsonnet default stays the legacy 1.568.
+        this.tpc.driftVelocity = 0.148073; // cm/us — A<->C crosser W-decon measurement (run 039252 evt 298651, pdvd/docs/qlmatch/pdvd-drift-crosser-298651.md) = 1.48073 mm/us, both crates common; matches the PDVD data-reco callers (wcp-porting pdvd/run_clus_evt.sh default 1.48073). Toolkit params.jsonnet default stays the legacy 1.568. (Superseded 0.1586 cathode-pinned convention.)
 
         // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 8 z-wall
         // + 16 bottom PMT (detType 1) = 40 channels, WCT flash-chain OpDet order
