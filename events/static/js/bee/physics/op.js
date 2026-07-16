@@ -204,6 +204,31 @@ class OP {
             let box = new THREE.BoxHelper(opBox);
             box.material.color.setHex(0xff0000);
             boxhelper.add(box);
+
+            // Mark the ANODE face. The BoxHelper wireframe renders every face the
+            // same, so while stepping flashes ('>' key) there is nothing to say which
+            // side of a box is the anode and which the cathode -- acute for PDVD,
+            // where the two volumes stack vertically and the cathode faces sit next to
+            // each other in the middle. driftDir points from the anode toward the
+            // cathode, so the anode face is at -driftDir*halfx from the box centre
+            // (PDVD: x=-341.55 bottom volume, +341.55 top). A slab, not a fatter line:
+            // LineBasicMaterial.linewidth is ignored by the WebGL renderer, so
+            // thickness has to come from geometry. depthWrite off so the band never
+            // hides charge behind it.
+            if (exp.name == "protodunevd") {
+                const anodeBand = 12; // cm, band depth along drift
+                let anodeMark = new THREE.Mesh(
+                    new THREE.BoxGeometry(anodeBand, halfy*2, halfz*2),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xff0000,
+                        transparent: true,
+                        depthWrite: false,
+                        opacity: 0.35,
+                }));
+                anodeMark.position.x = -exp.driftDir(iTPC) * (halfx - anodeBand/2);
+                boxhelper.add(anodeMark);
+            }
+
             let sx = exp.center(iTPC)[0]+shiftX; // shifted x location
             boxhelper.position.set(...exp.toLocalXYZ(sx, exp.center(iTPC)[1], exp.center(iTPC)[2]));
             group.add(boxhelper);
