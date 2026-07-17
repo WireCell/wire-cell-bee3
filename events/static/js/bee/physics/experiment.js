@@ -909,6 +909,32 @@ class ProtoDUNEVD extends Experiment {
         return { angleDeg: this.tpc.viewAngle[swap], mirror: false };
     }
 
+    // Detector-frame (side panel) T0 correction.  The op dump's `apa` field is the
+    // DRIFT SIDE (writer QLMatching.cxx: (x<cathode)?0 bottom:1 top), NOT the 0-7
+    // anode index.  driftDir()/flashTimeForTPC() below branch on i<4 / i>=4, so the
+    // baseline sst.drawDetectorFrame() path — which feeds them the raw apa value —
+    // reads a top cluster (apa=1) as bottom anode 1: driftDir +1 instead of -1 and
+    // op_t instead of op_t1, sending the top-volume charge off the detector (bottom
+    // apa=0 is accidentally correct since 0<4).  Map the side to a representative
+    // anode of that volume (bottom->0, top->4) so both branches fire correctly, and
+    // hand back the per-side clock indexed by THIS flash i (not op.currentFlash):
+    // the top side uses the TDE clock op_t1 when present.  PDHD/SBND are unaffected
+    // (PDHD has its own override; SBND's apa == its 2-TPC index, correct as-is).
+    detectorFrameCorrection(sst, op) {
+        let cids = op.data.op_cluster_ids, apa = op.data.apa;
+        if (!cids || !apa) return null;
+        let out = new Map();
+        for (let i = 0; i < cids.length; i++) {
+            if (!cids[i] || apa[i] == null) continue;
+            let side = parseInt(apa[i]);                 // 0 = bottom volume, 1 = top
+            if (Number.isNaN(side)) continue;
+            let tpc = side === 1 ? 4 : 0;                // representative anode of the volume
+            let t = (side === 1 && op.data.op_t1 != null) ? op.data.op_t1[i] : op.data.op_t[i];
+            for (let c of cids[i]) { let k = Number(c); if (!out.has(k)) out.set(k, { tpc, t }); }
+        }
+        return out;
+    }
+
 }
 
 // --------------------------------------------------------
