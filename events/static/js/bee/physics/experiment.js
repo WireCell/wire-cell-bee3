@@ -909,28 +909,68 @@ class ProtoDUNEVD extends Experiment {
         return { angleDeg: this.tpc.viewAngle[swap], mirror: false };
     }
 
-    // Detector-frame (side panel) T0 correction.  The op dump's `apa` field is the
-    // DRIFT SIDE (writer QLMatching.cxx: (x<cathode)?0 bottom:1 top), NOT the 0-7
-    // anode index.  driftDir()/flashTimeForTPC() below branch on i<4 / i>=4, so the
-    // baseline sst.drawDetectorFrame() path — which feeds them the raw apa value —
-    // reads a top cluster (apa=1) as bottom anode 1: driftDir +1 instead of -1 and
-    // op_t instead of op_t1, sending the top-volume charge off the detector (bottom
-    // apa=0 is accidentally correct since 0<4).  Map the side to a representative
-    // anode of that volume (bottom->0, top->4) so both branches fire correctly, and
-    // hand back the per-side clock indexed by THIS flash i (not op.currentFlash):
-    // the top side uses the TDE clock op_t1 when present.  PDHD/SBND are unaffected
-    // (PDHD has its own override; SBND's apa == its 2-TPC index, correct as-is).
+    // Detector-frame (side panel) T0 correction for PDVD's central (light-transparent)
+    // cathode and its two independently-clocked charge crates (BDE bottom / TDE top).
+    //
+    // A PDVD opflash is ONE flash for the whole detector, so it routinely matches
+    // clusters in BOTH drift volumes.  The op dump's `apa` field is therefore per-FLASH,
+    // not per-cluster, and does NOT identify a given cluster's volume — keying the shift
+    // off it misplaces every cluster of the "wrong" side by the full drift distance.
+    // (Two earlier attempts each fixed one side by breaking the other: the original
+    // baseline drove everything with driftDir +1 / op_t so the TOP was wrong; the
+    // apa-side version drove an apa=1 flash's clusters with driftDir -1 / op_t1 so the
+    // BOTTOM went wrong.)  The uncorrected img-global x is no signal either: a large T0
+    // slides a cluster's raw x clear across the cathode (a true top cluster imaged at
+    // raw x ≈ −343 belongs at +191 after correction).
+    //
+    // So, exactly like PDHD, decide each cluster's volume geometrically: pick the drift
+    // direction whose T0-corrected charge lands INSIDE a physical TPC box (fewer
+    // out-of-box points), using that volume's OWN clock — op_t (BDE) for the bottom
+    // (driftDir +1), op_t1 (TDE) for the top (driftDir −1).  Rigidly translate the whole
+    // cluster by the winning side.  A genuine tie (near-cathode charge small enough to
+    // fit either box) breaks to the raw-x centroid sign.  Representative anodes 0
+    // (bottom) / 4 (top) drive driftDir()/driftVelocityForTPC() back in sst.js.
+    // PDHD/SBND are unaffected (PDHD has its own override; SBND's apa == its TPC index).
     detectorFrameCorrection(sst, op) {
-        let cids = op.data.op_cluster_ids, apa = op.data.apa;
-        if (!cids || !apa) return null;
-        let out = new Map();
+        let cids = op.data.op_cluster_ids;
+        if (!cids || !op.data.op_t) return null;
+        let opT = op.data.op_t, opT1 = op.data.op_t1;   // opT1 absent on older dumps
+        // cluster_id -> its matched flash index (first match wins)
+        let flash = new Map();
         for (let i = 0; i < cids.length; i++) {
-            if (!cids[i] || apa[i] == null) continue;
-            let side = parseInt(apa[i]);                 // 0 = bottom volume, 1 = top
-            if (Number.isNaN(side)) continue;
-            let tpc = side === 1 ? 4 : 0;                // representative anode of the volume
-            let t = (side === 1 && op.data.op_t1 != null) ? op.data.op_t1[i] : op.data.op_t[i];
-            for (let c of cids[i]) { let k = Number(c); if (!out.has(k)) out.set(k, { tpc, t }); }
+            if (!cids[i]) continue;
+            for (let c of cids[i]) { let k = Number(c); if (!flash.has(k)) flash.set(k, i); }
+        }
+        if (!flash.size) return null;
+        // gather each matched cluster's raw img-global x points
+        let xs = new Map();
+        let cl = sst.data.cluster_id, X = sst.data.x;
+        for (let i = 0; i < X.length; i++) {
+            let k = Number(cl[i]);
+            if (!flash.has(k)) continue;
+            let a = xs.get(k); if (!a) { a = []; xs.set(k, a); }
+            a.push(X[i]);
+        }
+        // physical drift length cathode (x=0) -> anode, from the box geometry
+        let L = 0;
+        for (let i = 0; i < this.nTPC(); i++) { L = Math.max(L, Math.abs(this.center(i)[0]) + this.halfXYZ(i)[0]); }
+        let tol = 5, driftV = this.driftVelocityForTPC(0);
+        let out = new Map();
+        for (let [k, fi] of flash) {
+            let tb = opT[fi];                               // bottom clock (BDE)
+            let tt = (opT1 != null) ? opT1[fi] : opT[fi];   // top clock (TDE), fallback op_t
+            let pts = xs.get(k) || [];
+            let badBot = 0, badTop = 0, sum = 0;
+            for (let v of pts) {
+                let xb = v - driftV * tb * (+1);   // bottom (driftDir +1): valid [−L, tol]
+                let xt = v - driftV * tt * (-1);   // top    (driftDir −1): valid [−tol, L]
+                if (xb < -L - tol || xb > tol) badBot++;
+                if (xt >  L + tol || xt < -tol) badTop++;
+                sum += v;
+            }
+            let n = pts.length || 1, fb = badBot / n, ft = badTop / n;
+            let top = (Math.abs(fb - ft) < 0.05) ? ((sum / n) > 0) : (ft < fb);
+            out.set(k, top ? { tpc: 4, t: tt } : { tpc: 0, t: tb });
         }
         return out;
     }
