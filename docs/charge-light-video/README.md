@@ -4,6 +4,10 @@ Worked example for [`../making-a-charge-light-video.md`](../making-a-charge-ligh
 a ~28 s clip of one ProtoDUNE-HD charge–light match (Run 29107, Event 983) rendered
 straight from the Bee viewer — no Bee code changed.
 
+> **ProtoDUNE Vertical Drift** has its own full narrated build (top/bottom TPC + four CRPs,
+> side-panel matching, beam-flash finale): see
+> [`pdvd-charge-light-video.md`](pdvd-charge-light-video.md) and the `make_pdvd_*.mjs` scripts.
+
 ## Files
 
 - **`make_video.mjs`** — the renderer. Playwright drives the *existing* Bee viewer
