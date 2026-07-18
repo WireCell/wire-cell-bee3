@@ -16,8 +16,9 @@ The TPC boxes were updated (previous values kept as comments in
 `experiment.js`) to span:
 
 - **x**: from the **cathode** (PDHD: the physical cathode surface |x| = 0.159 cm
-  = the toolkit `cpa_plane` / QLMatching `cathode_x`; PDVD: still the |x| = 2.54 cm
-  clustering FV edge — see the per-detector sections) out to the
+  = the toolkit `cpa_plane` / QLMatching `cathode_x`; PDVD: the |x| = 3.0 cm
+  physical cathode surface, updated 2026-07 with the toolkit `cpa_thick`
+  50.8 → 60 mm GDML correction — see the per-detector sections) out to the
   **cathode-facing collection-wire plane** (where the apparent drift
   coordinate of a sampled blob point tops out at T0 = 0);
 - **y/z**: the per-anode wire extents of the toolkit's current default wire
@@ -115,21 +116,24 @@ x ≈ +341.55, drift −x), cathode at x = 0. Box index = WCT anode ident.
 
 | Box / anode | X (drift) [cm] | Y [cm] | Z (beam) [cm] |
 |---|---|---|---|
-| 0 | [−341.55, −2.54] | [−336.4, −0.6] | [0.855, 149.82] |
-| 1 | [−341.55, −2.54] | [−336.4, −0.6] | [149.82, 298.445] |
-| 2 | [−341.55, −2.54] | [+0.6, +336.4] | [0.855, 149.82] |
-| 3 | [−341.55, −2.54] | [+0.6, +336.4] | [149.82, 298.445] |
-| 4 | [+2.54, +341.55] | [−336.4, −0.6] | [−0.36, 149.65] |
-| 5 | [+2.54, +341.55] | [−336.4, −0.6] | [149.65, 300.0] |
-| 6 | [+2.54, +341.55] | [+0.6, +336.4] | [−0.36, 149.65] |
-| 7 | [+2.54, +341.55] | [+0.6, +336.4] | [149.65, 300.0] |
+| 0 | [−341.55, −3.0] | [−336.4, −0.6] | [0.855, 149.82] |
+| 1 | [−341.55, −3.0] | [−336.4, −0.6] | [149.82, 298.445] |
+| 2 | [−341.55, −3.0] | [+0.6, +336.4] | [0.855, 149.82] |
+| 3 | [−341.55, −3.0] | [+0.6, +336.4] | [149.82, 298.445] |
+| 4 | [+3.0, +341.55] | [−336.4, −0.6] | [−0.36, 149.65] |
+| 5 | [+3.0, +341.55] | [−336.4, −0.6] | [149.65, 300.0] |
+| 6 | [+3.0, +341.55] | [+0.6, +336.4] | [−0.36, 149.65] |
+| 7 | [+3.0, +341.55] | [+0.6, +336.4] | [149.65, 300.0] |
 
 Derivation (wire file `protodunevd-wires-larsoft-v5`, `wirecell-util wires-info`):
 
 - Collection (W) wire planes at x = ±341.55 cm (induction planes at ±341.51 /
   ±341.53) — the blob-x `xorig`.
-- Cathode gap |x| < 2.54 cm = physical cathode half-thickness (50.8 mm plate
-  at x = 0) = the clustering per-drift FV boundary.
+- Cathode gap |x| < 3.0 cm = physical cathode half-thickness (60 mm GDML
+  CathodeBlock at x = 0) = the clustering per-drift FV boundary. Updated
+  2026-07 from the legacy 2.54 cm (50.8 mm was the ProtoDUNE-SP/DocDB-203
+  value, which no PDVD GDML uses), together with the toolkit
+  `params.jsonnet` `cpa_thick` and `clus.jsonnet` FV correction.
 - y halves: each CRP's two faces split at |y| = 0.6 cm; the |y| < 0.6 band is
   a real no-wire gap, and the outer edge is ±336.4.
 - z: per-drift-side wire extents are bottom [0.855, 298.445] and top
@@ -140,7 +144,7 @@ Derivation (wire file `protodunevd-wires-larsoft-v5`, `wirecell-util wires-info`
   `Experiment.tpcOf()` needs disjoint boxes.
 
 Relation to the clustering FV (not used for the boxes): per-drift FV x is
-±[2.54, 335.835] — the FV anode edge sits 5.7 cm inside the wire plane
+±[3.0, 335.835] — the FV anode edge sits 5.7 cm inside the wire plane
 (`apa_plane` = 57.15 mm), so blob points in the 335.8–341.55 cm "anode band"
 are inside the boxes but outside the FV. Overall FV: y ±336.4,
 z [0.05, 299.25].
@@ -159,7 +163,8 @@ cross-checked against a surveyed toolkit reference.
 `[±3.03, ±313.03] × [0/−337, 337/0] × [0, 149.65, 299.3]` — the anode edge
 at |x| = 313.03 was **28.5 cm inside** the actual wire plane (and 22.8 cm
 inside even the FV edge), so tracks near the anodes rendered well outside the
-drawn detector; the cathode gap (3.03 cm) was ~0.5 cm per side too wide.
+drawn detector. The 2026-06 update also set the cathode gap to 2.54 cm
+(legacy 50.8 mm cathode), corrected 2026-07 to 3.0 cm (60 mm GDML).
 
 ## 4. Consistency summary (toolkit vs Bee, after the update)
 
@@ -169,9 +174,9 @@ drawn detector; the cathode gap (3.03 cm) was ~0.5 cm per side too wide.
 | PDHD cathode gap | ±2.54 (clus.jsonnet `a*f*pA` FV_x) | box edges, exact |
 | PDHD y/z extents | wire file v1 per-APA extents | box edges, exact |
 | PDVD anode (W-plane) x | ±341.55 (wire file v5) | box edges, exact |
-| PDVD cathode gap | ±2.54 (50.8 mm cathode; clus.jsonnet FV) | box edges, exact |
+| PDVD cathode gap | ±3.0 (60 mm GDML cathode; clus.jsonnet FV, 2026-07 correction) | box edges, exact |
 | PDVD y/z extents | wire file v5 per-anode extents | box edges, exact (z split at per-side gap midpoint) |
-| Drift velocity | 1.6 mm/µs (clus.jsonnet) | 0.16 cm/µs (PDHD explicit, PDVD base default) |
+| Drift velocity | PDHD 1.576 (crosser-calibrated, clus.jsonnet) / PDVD 1.586 mm/µs (cathode-pinned convention velocity, data-reco callers; pdvd-anode-time-consistency.md §8.12 — toolkit params.jsonnet default stays 1.568) | 0.1576 / 0.1586 cm/µs (both explicit in `experiment.js`; per-TPC hook `driftVelocityForTPC`) |
 
 Neither detector has per-event T0 (time_offset = 0 in the toolkit), so blob x
 is the apparent drift position; the box x ranges above are exactly the

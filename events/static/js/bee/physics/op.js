@@ -183,7 +183,6 @@ class OP {
         let t = this.data.op_t[currentFlash];
         let pes = this.combinedPes(members, 'op_pes');
         let pes_pred = this.combinedPes(members, 'op_pes_pred');
-        let driftV = this.store.experiment.tpc.driftVelocity;
         let lastBoxhelper = null, lastHalfx = 0;
 
         for (let iTPC=0; iTPC<this.store.experiment.nTPC(); iTPC++) {
@@ -192,7 +191,8 @@ class OP {
 
             let exp = this.store.experiment;
             let [halfx, halfy, halfz] = this.store.experiment.halfXYZ(iTPC);
-            let shiftX = detectorFrame ? 0 : driftV*t*exp.driftDir(iTPC); // drift shift (0 in detector frame)
+            let tTPC = exp.flashTimeForTPC(this, iTPC); // per-TPC charge clock (PDVD top/bottom crates differ)
+            let shiftX = detectorFrame ? 0 : exp.driftVelocityForTPC(iTPC)*tTPC*exp.driftDir(iTPC); // drift shift (0 in detector frame)
             let opBox = new THREE.Mesh(
                 new THREE.BoxGeometry(halfx*2, halfy*2, halfz*2 ),
                 new THREE.MeshBasicMaterial( {
@@ -204,6 +204,31 @@ class OP {
             let box = new THREE.BoxHelper(opBox);
             box.material.color.setHex(0xff0000);
             boxhelper.add(box);
+
+            // Mark the ANODE face. The BoxHelper wireframe renders every face the
+            // same, so while stepping flashes ('>' key) there is nothing to say which
+            // side of a box is the anode and which the cathode -- acute for PDVD,
+            // where the two volumes stack vertically and the cathode faces sit next to
+            // each other in the middle. driftDir points from the anode toward the
+            // cathode, so the anode face is at -driftDir*halfx from the box centre
+            // (PDVD: x=-341.55 bottom volume, +341.55 top). A slab, not a fatter line:
+            // LineBasicMaterial.linewidth is ignored by the WebGL renderer, so
+            // thickness has to come from geometry. depthWrite off so the band never
+            // hides charge behind it.
+            if (exp.name == "protodunevd") {
+                const anodeBand = 12; // cm, band depth along drift
+                let anodeMark = new THREE.Mesh(
+                    new THREE.BoxGeometry(anodeBand, halfy*2, halfz*2),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xff0000,
+                        transparent: true,
+                        depthWrite: false,
+                        opacity: 0.35,
+                }));
+                anodeMark.position.x = -exp.driftDir(iTPC) * (halfx - anodeBand/2);
+                boxhelper.add(anodeMark);
+            }
+
             let sx = exp.center(iTPC)[0]+shiftX; // shifted x location
             boxhelper.position.set(...exp.toLocalXYZ(sx, exp.center(iTPC)[1], exp.center(iTPC)[2]));
             group.add(boxhelper);
@@ -227,8 +252,11 @@ class OP {
                             new THREE.EdgesGeometry(circleGeometry),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        // orient 1 = lie flat on a lateral (+-y) wall; else face +-x
-                        if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; } else { circle.rotation.y = Math.PI / 2; }
+                        // orient 1 = lie flat on a lateral (+-y) wall; 2 = face +-z
+                        // (z-end wall; default plane orientation already faces +-z);
+                        // else face +-x (drift)
+                        if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; }
+                        else if (location[i][4] != 2) { circle.rotation.y = Math.PI / 2; }
                         circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
                         group.add(circle);
                     }
@@ -293,7 +321,8 @@ class OP {
                         opacity: 0.2,
                         side: THREE.DoubleSide
                     }));
-                    if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; } else { circle.rotation.y = Math.PI / 2; }
+                    if (location[i][4] == 1) { circle.rotation.x = Math.PI / 2; }
+                    else if (location[i][4] != 2) { circle.rotation.y = Math.PI / 2; }
                     let sox = location[i][0]+shiftX; // shifted op x location
                     circle.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
                     group.add(circle);
@@ -319,7 +348,8 @@ class OP {
                                 opacity: 0.2,
                                 side: THREE.DoubleSide
                             }));
-                            if (location[i][4] == 1) { circle_pred.rotation.x = Math.PI / 2; } else { circle_pred.rotation.y = Math.PI / 2; }
+                            if (location[i][4] == 1) { circle_pred.rotation.x = Math.PI / 2; }
+                            else if (location[i][4] != 2) { circle_pred.rotation.y = Math.PI / 2; }
                             let sox = location[i][0]+shiftX; // shifted op x location
                             if (this.store.experiment.name == "protodunehd"
                                 || this.store.experiment.name == "protodunevd") {

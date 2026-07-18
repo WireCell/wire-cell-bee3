@@ -52,6 +52,23 @@ class Experiment {
         return ((i % 2) -0.5) * -2; // -1 or 1
     }
 
+    // Drift velocity (cm/us) for TPC iTPC.  Base: the experiment's single
+    // tpc.driftVelocity — correct for detectors whose drift volumes share one
+    // calibrated speed.  Detectors calibrated per volume override this,
+    // mirroring driftDir/flashTimeForTPC.
+    driftVelocityForTPC(iTPC) {
+        return this.tpc.driftVelocity;
+    }
+
+    // Flash time (us) to use when drift-shifting TPC iTPC's boxes/PDs/charge
+    // for the current flash.  Base: the op dump's single op_t — correct for
+    // detectors whose charge crates share one readout clock.  Detectors whose
+    // crates frame readout windows independently (PDVD BDE/TDE) override this
+    // to pick the per-side clock (op_t1) for the second side.
+    flashTimeForTPC(op, iTPC) {
+        return op.data.op_t[op.currentFlash];
+    }
+
     // Whether the U/V/W projection view (index 0/1/2) must be horizontally
     // mirrored to match the signal-processing image.
     //
@@ -776,9 +793,10 @@ class ProtoDUNEVD extends Experiment {
 
     constructor() {
         super('protodunevd');
-        // Boxes span cathode FV edge (|x|=2.54 cm, the WCT clustering cathode gap;
-        // physical cathode is 50.8 mm thick at x=0) to the collection-wire plane
-        // (|x|=341.55 cm); y/z from the per-anode wire extents of
+        // Boxes span the cathode drift-facing surface (|x|=3.0 cm; physical
+        // cathode is 60 mm thick at x=0, GDML CathodeBlock -- toolkit
+        // cfg/.../protodunevd/params.jsonnet cpa_thick) to the collection-wire
+        // plane (|x|=341.55 cm); y/z from the per-anode wire extents of
         // protodunevd-wires-larsoft-v5.json.bz2 (wirecell-util wires-info).
         // z splits at the per-drift-side gap midpoints so boxes stay disjoint.
         // Box index = WCT anode 0-7 (0-3 bottom drift +x, 4-7 top drift -x).
@@ -791,42 +809,65 @@ class ProtoDUNEVD extends Experiment {
             // [3.03, 313.03, -337, 0, 149.65, 299.3],
             // [3.03, 313.03, 0, 337, 0, 149.65],
             // [3.03, 313.03, 0, 337, 149.65, 299.3]
-            [-341.55, -2.54, -336.4, -0.6, 0.855, 149.82],
-            [-341.55, -2.54, -336.4, -0.6, 149.82, 298.445],
-            [-341.55, -2.54, 0.6, 336.4, 0.855, 149.82],
-            [-341.55, -2.54, 0.6, 336.4, 149.82, 298.445],
-            [2.54, 341.55, -336.4, -0.6, -0.36, 149.65],
-            [2.54, 341.55, -336.4, -0.6, 149.65, 300.0],
-            [2.54, 341.55, 0.6, 336.4, -0.36, 149.65],
-            [2.54, 341.55, 0.6, 336.4, 149.65, 300.0]
+            [-341.55, -3.0, -336.4, -0.6, 0.855, 149.82],
+            [-341.55, -3.0, -336.4, -0.6, 149.82, 298.445],
+            [-341.55, -3.0, 0.6, 336.4, 0.855, 149.82],
+            [-341.55, -3.0, 0.6, 336.4, 149.82, 298.445],
+            [3.0, 341.55, -336.4, -0.6, -0.36, 149.65],
+            [3.0, 341.55, -336.4, -0.6, 149.65, 300.0],
+            [3.0, 341.55, 0.6, 336.4, -0.36, 149.65],
+            [3.0, 341.55, 0.6, 336.4, 149.65, 300.0]
         ]);
         this.tpc.viewAngle = [120, 60, 0];
         this.camera.depth = 4000;
+        this.tpc.driftVelocity = 0.148073; // cm/us — A<->C crosser W-decon measurement (run 039252 evt 298651, pdvd/docs/qlmatch/pdvd-drift-crosser-298651.md) = 1.48073 mm/us, both crates common; matches the PDVD data-reco callers (wcp-porting pdvd/run_clus_evt.sh default 1.48073). Toolkit params.jsonnet default stays the legacy 1.568. (Superseded 0.1586 cathode-pinned convention.)
 
-        // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 24 PMT
-        // (detType 1) = 40 channels, in PDVD_PDS_Mapping_v09162025.json channel
-        // order (cathode = channels 4-11). Representative placement in the WCT box
-        // frame (not surveyed GDML positions, which are in a frame shifted from the
-        // boxes). entry = [x, y, z, detType, orient]; orient 0/absent = face +-x
-        // (drift), 1 = face +-y (lateral wall). Cathode X-ARAPUCAs lie on the central
-        // cathode plane (x=0); membrane X-ARAPUCAs lie flat on the lateral y=+-336.4
-        // walls; PMTs sit on the bottom membrane just below the bottom CRP (x=-341.55).
+        // Photon detectors: 8 cathode + 8 membrane X-ARAPUCA (detType 2) + 8 z-wall
+        // + 16 bottom PMT (detType 1) = 40 channels, WCT flash-chain OpDet order
+        // (== toolkit calib-dump 'pe' array order; channel roles documented in
+        // cfg/.../protodunevd/qlmatching.jsonnet). Positions below are the REAL
+        // surveyed detector-frame [cm] positions from toolkit
+        // cfg/pgrapher/experiment/protodunevd/pdvd-opdet-geom.json (data-derived,
+        // from the raw_waveform TTree x/y/z branches; matches the v5 as-built GDML
+        // and already shares this frame with the TPC boxes above -- e.g. the
+        // membrane XA z=149.65 lands exactly on the box z-split). Four bottom PMTs
+        // (24/27/28/34) are dead in data (absent from raw_waveform, never light up)
+        // so their slot is filled by mirroring the live channel across the same
+        // grid row; that position is purely cosmetic. entry = [x, y, z, detType,
+        // orient]; orient 0/absent = face +-x (drift), 1 = face +-y (lateral
+        // membrane wall), 2 = face +-z (z-end wall).
+        const vdOpPosCm = {
+            0: [305.60, 417.61, 149.65], 1: [305.60, -417.61, 149.65],
+            2: [229.00, 417.61, 149.65], 3: [229.00, -417.61, 149.65],
+            4: [0.00, 123.85, 258.525], 5: [0.00, -213.15, 258.525],
+            6: [0.00, 290.35, 187.275], 7: [0.00, -46.65, 187.275],
+            8: [0.00, 42.60, 112.025], 9: [0.00, -213.15, 112.025],
+            10: [0.00, 209.10, 40.775], 11: [0.00, -127.90, 40.775],
+            12: [-201.10, 417.61, 149.65], 13: [-201.10, -417.61, 149.65],
+            14: [-205.90, 221.00, 408.988], 15: [-205.90, -221.00, 408.988],
+            16: [-205.90, 256.00, -96.124], 17: [-205.90, -221.00, -109.688],
+            18: [-277.70, 417.61, 149.65], 19: [-277.70, -417.61, 149.65],
+            20: [-281.70, 221.00, 408.988], 21: [-281.70, -221.00, 408.988],
+            22: [-281.70, 256.00, -96.124], 23: [-281.70, -221.00, -109.688],
+            24: [-336.474, 170.00, 455.65],  // dead; mirrors ch26's row
+            25: [-336.474, 0.00, 455.65], 26: [-336.474, -170.00, 455.65],
+            27: [-336.474, 0.00, 353.65],     // dead; fills ch29's row
+            28: [-336.474, 170.00, 353.65],   // dead; fills ch29's row
+            29: [-336.474, -170.00, 353.65],
+            30: [-336.474, 405.30, 217.75], 31: [-336.474, -405.30, 217.75],
+            32: [-336.474, 405.30, 149.65], 33: [-336.474, -405.30, 149.65],
+            34: [-336.474, 170.00, -54.35],   // dead; mirrors ch36's row
+            35: [-336.474, 0.00, -54.35], 36: [-336.474, -170.00, -54.35],
+            37: [-336.474, 170.00, -156.35], 38: [-336.474, 0.00, -156.35],
+            39: [-336.474, -170.00, -156.35],
+        };
         let vdOp = {};
-        let nC = 0, nM = 0, nP = 0;
         for (let i = 0; i < 40; i++) {
-            if (i >= 4 && i <= 11) { // cathode X-ARAPUCA: x=0 plane, 2(y) x 4(z) grid, face +-x
-                let col = nC % 2, row = Math.floor(nC / 2); nC++;
-                vdOp[i] = [0.0, col == 0 ? -168 : 168, 37.5 + row * 75, 2];
-            }
-            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { // membrane X-ARAPUCA: lateral wall, face +-y
-                let wall = nM < 4 ? -336.4 : 336.4, idx = nM % 4; nM++;
-                let x = idx % 2 == 0 ? -170 : 170, z = idx < 2 ? 100 : 200;
-                vdOp[i] = [x, wall, z, 2, 1]; // orient 1 = lie flat on the y wall
-            }
-            else { // PMT: bottom membrane below the bottom CRP, x=-341.55, 4(y) x 6(z) grid, face +x
-                let yi = nP % 4, zi = Math.floor(nP / 4); nP++;
-                vdOp[i] = [-341.55, [-250, -83, 83, 250][yi], 25 + zi * 50, 1];
-            }
+            let pos = vdOpPosCm[i];
+            if (i >= 4 && i <= 11) { vdOp[i] = [...pos, 2]; } // cathode X-ARAPUCA
+            else if (i < 4 || i == 12 || i == 13 || i == 18 || i == 19) { vdOp[i] = [...pos, 2, 1]; } // membrane X-ARAPUCA
+            else if (i >= 14 && i <= 23) { vdOp[i] = [...pos, 1, 2]; } // z-wall PMT
+            else { vdOp[i] = [...pos, 1]; } // bottom PMT
         }
         this.updateOPLocation(vdOp, 40);
         this.op.peScaling = 0.5;
@@ -842,6 +883,19 @@ class ProtoDUNEVD extends Experiment {
         return i < 4 ? 1 : -1;
     }
 
+    // PDVD BDE (bottom, TPC 0-3) and TDE (top, TPC 4-7) charge crates frame
+    // their readout windows independently (window starts up to ~32 us apart per
+    // event).  op_t is the flash time on the BOTTOM crate's clock; op_t1 (when
+    // the op dump carries it — toolkit QLMatching with per-input
+    // trigger_offsets) is the SAME flash on the TOP crate's clock.  Using op_t
+    // for the top volume misplaces its boxes/charge by (op_t1 − op_t)·v, up to
+    // ~4.6 cm in run 039252.  Older dumps without op_t1 fall back to op_t
+    // (previous behavior).
+    flashTimeForTPC(op, iTPC) {
+        if (iTPC >= 4 && op.data.op_t1 != null) { return op.data.op_t1[op.currentFlash]; }
+        return op.data.op_t[op.currentFlash];
+    }
+
     // PDVD reverse anodes (4-7) have their U/V wire tilts swapped relative to the
     // nominal anodes (0-3): U  +60 <-> -60, V  -60 <-> +60. So a reverse anode is
     // geometrically a nominal anode with U and V exchanged. Since the nominal
@@ -853,6 +907,72 @@ class ProtoDUNEVD extends Experiment {
         }
         const swap = index === 0 ? 1 : (index === 1 ? 0 : 2); // U<->V, W unchanged
         return { angleDeg: this.tpc.viewAngle[swap], mirror: false };
+    }
+
+    // Detector-frame (side panel) T0 correction for PDVD's central (light-transparent)
+    // cathode and its two independently-clocked charge crates (BDE bottom / TDE top).
+    //
+    // A PDVD opflash is ONE flash for the whole detector, so it routinely matches
+    // clusters in BOTH drift volumes.  The op dump's `apa` field is therefore per-FLASH,
+    // not per-cluster, and does NOT identify a given cluster's volume — keying the shift
+    // off it misplaces every cluster of the "wrong" side by the full drift distance.
+    // (Two earlier attempts each fixed one side by breaking the other: the original
+    // baseline drove everything with driftDir +1 / op_t so the TOP was wrong; the
+    // apa-side version drove an apa=1 flash's clusters with driftDir -1 / op_t1 so the
+    // BOTTOM went wrong.)  The uncorrected img-global x is no signal either: a large T0
+    // slides a cluster's raw x clear across the cathode (a true top cluster imaged at
+    // raw x ≈ −343 belongs at +191 after correction).
+    //
+    // So, exactly like PDHD, decide each cluster's volume geometrically: pick the drift
+    // direction whose T0-corrected charge lands INSIDE a physical TPC box (fewer
+    // out-of-box points), using that volume's OWN clock — op_t (BDE) for the bottom
+    // (driftDir +1), op_t1 (TDE) for the top (driftDir −1).  Rigidly translate the whole
+    // cluster by the winning side.  A genuine tie (near-cathode charge small enough to
+    // fit either box) breaks to the raw-x centroid sign.  Representative anodes 0
+    // (bottom) / 4 (top) drive driftDir()/driftVelocityForTPC() back in sst.js.
+    // PDHD/SBND are unaffected (PDHD has its own override; SBND's apa == its TPC index).
+    detectorFrameCorrection(sst, op) {
+        let cids = op.data.op_cluster_ids;
+        if (!cids || !op.data.op_t) return null;
+        let opT = op.data.op_t, opT1 = op.data.op_t1;   // opT1 absent on older dumps
+        // cluster_id -> its matched flash index (first match wins)
+        let flash = new Map();
+        for (let i = 0; i < cids.length; i++) {
+            if (!cids[i]) continue;
+            for (let c of cids[i]) { let k = Number(c); if (!flash.has(k)) flash.set(k, i); }
+        }
+        if (!flash.size) return null;
+        // gather each matched cluster's raw img-global x points
+        let xs = new Map();
+        let cl = sst.data.cluster_id, X = sst.data.x;
+        for (let i = 0; i < X.length; i++) {
+            let k = Number(cl[i]);
+            if (!flash.has(k)) continue;
+            let a = xs.get(k); if (!a) { a = []; xs.set(k, a); }
+            a.push(X[i]);
+        }
+        // physical drift length cathode (x=0) -> anode, from the box geometry
+        let L = 0;
+        for (let i = 0; i < this.nTPC(); i++) { L = Math.max(L, Math.abs(this.center(i)[0]) + this.halfXYZ(i)[0]); }
+        let tol = 5, driftV = this.driftVelocityForTPC(0);
+        let out = new Map();
+        for (let [k, fi] of flash) {
+            let tb = opT[fi];                               // bottom clock (BDE)
+            let tt = (opT1 != null) ? opT1[fi] : opT[fi];   // top clock (TDE), fallback op_t
+            let pts = xs.get(k) || [];
+            let badBot = 0, badTop = 0, sum = 0;
+            for (let v of pts) {
+                let xb = v - driftV * tb * (+1);   // bottom (driftDir +1): valid [−L, tol]
+                let xt = v - driftV * tt * (-1);   // top    (driftDir −1): valid [−tol, L]
+                if (xb < -L - tol || xb > tol) badBot++;
+                if (xt >  L + tol || xt < -tol) badTop++;
+                sum += v;
+            }
+            let n = pts.length || 1, fb = badBot / n, ft = badTop / n;
+            let top = (Math.abs(fb - ft) < 0.05) ? ((sum / n) > 0) : (ft < fb);
+            out.set(k, top ? { tpc: 4, t: tt } : { tpc: 0, t: tb });
+        }
+        return out;
     }
 
 }
