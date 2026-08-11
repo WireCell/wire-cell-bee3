@@ -153,7 +153,7 @@ class DeadArea {
                 mergedGeometry.setAttribute('position', new THREE.BufferAttribute(e.data.position, 3));
                 mergedGeometry.setAttribute('normal', new THREE.BufferAttribute(e.data.normal, 3));
                 let material = new THREE.MeshBasicMaterial({
-                    color: 0x888888,
+                    color: label.includes('apa0') ? 0x888888 : label.includes('apa1') ? 0xFF0000 : 0x888888,
                     transparent: true,
                     depthWrite: true,
                     opacity: this.store.config.helper.deadAreaOpacity,
