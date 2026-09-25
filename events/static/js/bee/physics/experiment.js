@@ -161,6 +161,11 @@ class Experiment {
     // ProtoDUNEHD overrides this -- see its detectorFrameCorrection.
     detectorFrameCorrection(sst, op) { return null; }
 
+    // Whether a charge layer's x is ALREADY T0-corrected by the producer (the
+    // detector frame), so the side panel must draw it as is instead of applying
+    // the raw-x T0 shift a second time.  Base: every layer is raw.
+    layerInDetectorFrame(sst) { return false; }
+
 }
 
 
@@ -931,15 +936,30 @@ class ProtoDUNEVD extends Experiment {
     // fit either box) breaks to the raw-x centroid sign.  Representative anodes 0
     // (bottom) / 4 (top) drive driftDir()/driftVelocityForTPC() back in sst.js.
     // PDHD/SBND are unaffected (PDHD has its own override; SBND's apa == its TPC index).
+    //
+    // Dumps that carry op_cluster_anodes (toolkit MultiAlgBlobClustering
+    // bee_flash_cluster_anodes, doc pdvd/119 sec 8) name each matched cluster's anode,
+    // and that is used instead: the geometric test cannot separate the volumes for a
+    // cluster within v*t of the cathode (both T0 corrections land in-box), and the
+    // raw-x tie-break is not a side signal -- a top cluster there has NEGATIVE raw x,
+    // so on the top-only run 39305 every such tie went to the bottom (25 of 268
+    // matched clusters, among them the beam-matched ones of events 317673/245576/191916).
     detectorFrameCorrection(sst, op) {
         let cids = op.data.op_cluster_ids;
         if (!cids || !op.data.op_t) return null;
         let opT = op.data.op_t, opT1 = op.data.op_t1;   // opT1 absent on older dumps
-        // cluster_id -> its matched flash index (first match wins)
-        let flash = new Map();
+        let anodes = op.data.op_cluster_anodes;         // absent on older dumps
+        // cluster_id -> its matched flash index (first match wins), and its anode
+        let flash = new Map(), anodeOf = new Map();
         for (let i = 0; i < cids.length; i++) {
             if (!cids[i]) continue;
-            for (let c of cids[i]) { let k = Number(c); if (!flash.has(k)) flash.set(k, i); }
+            for (let j = 0; j < cids[i].length; j++) {
+                let k = Number(cids[i][j]);
+                if (flash.has(k)) continue;
+                flash.set(k, i);
+                let a = (anodes && anodes[i]) ? Number(anodes[i][j]) : NaN;
+                if (a >= 0 && a < this.nTPC()) anodeOf.set(k, a);
+            }
         }
         if (!flash.size) return null;
         // gather each matched cluster's raw img-global x points
@@ -959,6 +979,11 @@ class ProtoDUNEVD extends Experiment {
         for (let [k, fi] of flash) {
             let tb = opT[fi];                               // bottom clock (BDE)
             let tt = (opT1 != null) ? opT1[fi] : opT[fi];   // top clock (TDE), fallback op_t
+            if (anodeOf.has(k)) {                           // producer-named volume
+                let a = anodeOf.get(k);
+                out.set(k, { tpc: a, t: this.driftDir(a) < 0 ? tt : tb });
+                continue;
+            }
             let pts = xs.get(k) || [];
             let badBot = 0, badTop = 0, sum = 0;
             for (let v of pts) {
@@ -974,6 +999,19 @@ class ProtoDUNEVD extends Experiment {
         }
         return out;
     }
+
+    // PDVD's clustering-global layer is written in x_t0cor (toolkit
+    // cfg/.../protodunevd/clus.jsonnet clus_all_tpc: common_corr_coords whenever
+    // Q/L matching ran, since 9ded936c2 of 2026-07-09, the same commit that
+    // added the op dump -- so every PDVD zip with an op member has it): each
+    // matched cluster is already at its flash's drift position in its own
+    // volume.  Shifting it again put it v*t further out (the beam-matched cluster
+    // of 317673 at x 71..193 instead of 9..131 cm), and the geometric side test
+    // on corrected x sent 78 of 268 matched clusters of run 39305 into the
+    // bottom volume, which that top-only run does not read out.  Only this
+    // stage-4 layer is corrected; img-global and the per-side stage-3 layers are
+    // raw.  (doc pdvd/119 sec 8)
+    layerInDetectorFrame(sst) { return sst != null && sst.name === 'clustering-global'; }
 
 }
 

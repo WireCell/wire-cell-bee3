@@ -224,6 +224,11 @@ class SST {
         // cluster with the TPC that keeps its T0-corrected charge inside the detector,
         // and uses its matched flash's own time). null -> baseline: apa direction +
         // current-flash time.
+        // A layer the producer already T0-corrected is the detector frame: draw it as is.
+        if (exp.layerInDetectorFrame(this)) {
+            this.drawInsideBox(-1e9, 1e9, -1e9, 1e9, -1e9, 1e9, false, scene, (gx) => gx);
+            return;
+        }
         let corr = exp.detectorFrameCorrection(this, op);
         let shiftFn = (gx, gy, gz, clusterId) => {
             let id = Number(clusterId);
