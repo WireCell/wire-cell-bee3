@@ -36,6 +36,20 @@ class OP {
         return this.data.op_flash_group ? this.data.op_flash_group[idx] : idx;
     }
 
+    // True when the producer labelled the in-beam flash itself: a per-flash
+    // 0/1 `op_beam` array aligned with op_t (Wire-Cell MultiAlgBlobClustering
+    // bee_beam_window_us; PDVD doc 119).  An all-zero array means "labelled,
+    // no in-beam flash in this event".  Absent (older files, uBooNE/SBND) =>
+    // the '/' key keeps its per-experiment op_t window.
+    hasBeamLabel() {
+        let b = this.data.op_beam;
+        return Array.isArray(b) && b.length === this.data.op_t.length;
+    }
+
+    isBeamFlash(idx) {
+        return this.hasBeamLabel() && this.data.op_beam[idx] === 1;
+    }
+
     // Union of matched cluster ids over the current flash's group.
     currentMatchingIds() {
         let ids = [];
@@ -152,7 +166,8 @@ class OP {
         let apa = this.data.apa;
         let lines = members.map(i =>
             `#${i}: (${this.data.op_t[i]} us, ${this.data.op_peTotal[i]} pe)` +
-            (apa ? ` TPC${apa[i]}` : ''));
+            (apa ? ` TPC${apa[i]}` : '') +
+            (this.isBeamFlash(i) ? ' [BEAM]' : ''));
         this.store.dom.el_statusbar.html(lines.join('<br/>'));
         if (this.data.op_l1_t) {
             let l1size = this.data.op_l1_t[this.currentFlash].length;
@@ -432,7 +447,32 @@ class OP {
         this.drawMachingCluster();
     }
 
+    // '/' with a producer label: step to the next labelled in-beam flash
+    // (cyclic, starting after the current one; with a single beam flash a
+    // repeated '/' re-shows it).  Time window and match status are NOT
+    // required -- an unmatched beam flash is still shown, and says so.  On
+    // failure currentFlash is left untouched (the display stays in sync).
+    nextBeamLabelled() {
+        let n = this.data.op_t.length;
+        let beams = [];
+        for (let i = 0; i < n; i++) { if (this.data.op_beam[i] === 1) beams.push(i); }
+        if (beams.length === 0) {
+            this.store.dom.el_statusbar.html('No in-beam flash in this event (op_beam label)');
+            return;
+        }
+        let next = beams.find(i => i > this.currentFlash);
+        this.currentFlash = (next === undefined) ? beams[0] : next;
+        this.drawMachingCluster();
+        let cids = this.data.op_cluster_ids[this.currentFlash];
+        if (!cids || cids.length == 0) {
+            this.store.dom.el_statusbar.html(
+                this.store.dom.el_statusbar.html() +
+                "<br/>BEAM flash, no matched cluster (untick 'Matching Cluster' to see all charge)");
+        }
+    }
+
     nextMatchingBeam() {
+        if (this.hasBeamLabel()) { this.nextBeamLabelled(); return; }
         let startGroup = this.flashGroup(this.currentFlash);
         let n = 0;
         do {

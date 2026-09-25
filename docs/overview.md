@@ -79,7 +79,7 @@ Path: `BASE_DIR/<DATA_DIR>/<alias>/data/`
 - Per-set `summary.json` at `<alias>/data/summary.json` — generated automatically on first access if absent.
 - Per-event directory `<alias>/data/<event_id>/` containing:
   - `<event_id>-mc.json` — Monte Carlo truth
-  - `<event_id>-op.json` — optical data (per-flash `op_t`/`op_pes`/`op_cluster_ids`/`apa`…; flashes are emitted in ascending `op_t` so the viewer's flash next/prev steps low→high in time; optional `op_flash_group` ties TPC0/TPC1 flashes within a ±80 ns coincidence — when present the viewer shows a whole group together, else one flash at a time)
+  - `<event_id>-op.json` — optical data (per-flash `op_t`/`op_pes`/`op_cluster_ids`/`apa`…; flashes are emitted in ascending `op_t` so the viewer's flash next/prev steps low→high in time; optional `op_flash_group` ties TPC0/TPC1 flashes within a ±80 ns coincidence — when present the viewer shows a whole group together, else one flash at a time; optional `op_beam` 0/1 array labels the in-beam flash — when present the `/` key steps through the labelled flash(es) instead of applying the experiment's `beamTimeMin/Max` op_t window, shows it even if unmatched, and the status line tags it `[BEAM]`; an all-zero array means the event was labelled and has no in-beam flash)
   - `<event_id>-rec_charge_blob.json` — blob reconstruction
   - `<event_id>-rec_simple.json` — simple reconstruction
   - `<event_id>-rec_charge_cell.json` — cell reconstruction
