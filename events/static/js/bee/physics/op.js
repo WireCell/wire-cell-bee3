@@ -253,7 +253,8 @@ class OP {
             let nDet = this.store.experiment.op.nDet;
             if (this.store.experiment.name == "sbnd"
                 || this.store.experiment.name == "protodunehd"
-                || this.store.experiment.name == "protodunevd") {
+                || this.store.experiment.name == "protodunevd"
+                || this.store.experiment.name == "icarus") {
                 for (let i=0; i<nDet; i++) {
                     if (this.store.experiment.opTPC(i) != iTPC) continue;
                     let detType = location[i][3] == undefined ? 1 : location[i][3];
