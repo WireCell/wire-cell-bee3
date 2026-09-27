@@ -754,7 +754,10 @@ class ICARUS extends Experiment {
         // Majority-trigger beam flash at -0.62 us (doc icarus/01 sec 7).
         this.op.beamTimeMin = -1;
         this.op.beamTimeMax = 1;
-        this.op.peScaling = 0.3;
+        // Circle radius = sqrt(PE) x peScaling (cm).  ICARUS per-PMT PE (9-event
+        // sample): median 32, p90 511 -> 5.7 / 23 cm at 1.0 (the Bee default the old
+        // class used); 0.3 drew them inside the 10 cm PMT outline, i.e. invisible.
+        this.op.peScaling = 1.0;
     }
 
     opTPC(i) { return Math.floor(i / 90); } // wall w = OpChannels 90w..90w+89 faces TPC w
