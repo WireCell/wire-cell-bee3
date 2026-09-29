@@ -809,6 +809,58 @@ class DUNE10ktWorkspace extends Experiment {
 }
 
 // --------------------------------------------------------
+// DUNE FD horizontal-drift 1x2x6 workspace (dune10kt-1x2x6-wires-larsoft-v1.json.bz2):
+// 12 APAs at x = 0, 2 rows in y x 6 columns in z, BOTH faces live and drifting
+// outward to cathodes at x = +-362.9 cm.  WCT anode ident a: row a % 2 (0 = y < 0),
+// column floor(a / 2); face 0 = +x, face 1 = -x.  One box per (APA, face) = 24 TPCs.
+// Box x spans the collection plane (|x| = 3.00155 cm) to the cathode surface
+// (|x| = 363.075 - 0.3175/2 = 362.91625 cm); y/z are the per-APA wire extents
+// (wirecell-util wires-info).  Box order: -x before +x per (column, row), so
+// location[0] holds the minimum and location[23] the maximum corner that
+// updateDimensions() reads.  With the anode at the box's INNER side, the base
+// parity driftDir would be backwards for that order, so driftDir is geometric.
+class DUNE10kt1x2x6 extends Experiment {
+
+    constructor() {
+        super('dune10kt-1x2x6');
+        const xw = 3.00155, xc = 362.91625;        // cm
+        const yin = 0.994, yout = 600.120;         // cm
+        const zpitch = 232.39, zlen = 230.638;     // cm
+        let loc = [];
+        for (let col = 0; col < 6; col++) {
+            let z0 = col * zpitch, z1 = z0 + zlen;
+            for (let row = 0; row < 2; row++) {
+                let y0 = row == 0 ? -yout : yin;
+                let y1 = row == 0 ? -yin : yout;
+                loc.push([-xc, -xw, y0, y1, z0, z1]);  // face 1 (-x)
+                loc.push([xw, xc, y0, y1, z0, z1]);    // face 0 (+x)
+            }
+        }
+        this.updateTPCLocation(loc);
+        this.tpc.viewAngle = [-35.7, 35.7, 0];
+        this.tpc.driftVelocity = 0.16; // cm/us, the wcfm chain's 1.6 mm/us
+        this.camera.depth = 4000;
+    }
+
+    // +1 = anode on the box's -x side (the +x boxes), -1 = on its +x side.
+    driftDir(i) {
+        return this.tpc.location[i][0] >= 0 ? 1 : -1;
+    }
+
+    // SP channel direction vs +Z (segment-0 wires of the wires file):
+    //   y > 0 APAs (odd ident):  face 0 (+x drift) U=+Z V=-Z, face 1 U=-Z V=+Z
+    //   y < 0 APAs (even ident): face 0 (+x drift) U=-Z V=+Z, face 1 U=+Z V=-Z
+    // The y > 0 row numbers like PDHD (nominal = +x drift: mirror V; reverse: mirror U),
+    // so that rule is used; the y < 0 row is the opposite and its U/V projections
+    // show mirrored against SP.  projMirror() has no TPC argument to tell them apart.
+    projMirror(index, reverseDrift) {
+        return index === (reverseDrift ? 0 : 1);
+    }
+
+}
+
+
+// --------------------------------------------------------
 class DUNE35t extends Experiment {
 
     constructor() {
@@ -1626,6 +1678,7 @@ function createExperiment(name) {
     else if (name == 'protodune') { exp = new ProtoDUNE(); }
     else if (name == 'icarus') { exp = new ICARUS(); }
     else if (name == 'dune10kt_workspace') { exp = new DUNE10ktWorkspace(); }
+    else if (name == 'dune10kt-1x2x6') { exp = new DUNE10kt1x2x6(); }
     else if (name == 'dune35t') { exp = new DUNE35t(); }
     else if (name == 'protodunevd-test') { exp = new ProtoDUNEVDTest(); }
     else if (name == 'protodunevd') { exp = new ProtoDUNEVD(); }
