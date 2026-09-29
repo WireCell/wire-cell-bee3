@@ -1361,7 +1361,10 @@ class DUNEFDVD1x8x14 extends Experiment {
         this.tpc.driftVelocity = 0.160563; // cm/us, the FD-VD LArSoft value the sample was drifted with
         this.daq.timeBeforeTrigger = 0;    // readout = [0, 4250] us, tick 0 at the neutrino time
         this.daq.timeAfterTrigger = 4250;
-        this.camera.depth = 8000;
+        // 4000 as the other large detectors: the camera sits 1.118 * depth from the centre and
+        // scene.js clips at far = 8000, so depth 8000 (8944 cm) clipped nearly the whole detector
+        // (half-diagonal 1290 cm); 4000 keeps it inside the frustum at any rotation (4472 + 1290).
+        this.camera.depth = 4000;
 
         // 184 X-ARAPUCAs in LArSoft OpDet order (the recob::OpFlash PE index): 112 on the cathode
         // (x = -327.5, facing x), 56 long-lateral on the y = +-743.3 walls (orient 1), 16
