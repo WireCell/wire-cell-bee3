@@ -230,7 +230,7 @@ class OP {
             // LineBasicMaterial.linewidth is ignored by the WebGL renderer, so
             // thickness has to come from geometry. depthWrite off so the band never
             // hides charge behind it.
-            if (exp.name == "protodunevd") {
+            if (exp.name == "protodunevd" || exp.name == "dunefdvd-1x8x14") {
                 const anodeBand = 12; // cm, band depth along drift
                 let anodeMark = new THREE.Mesh(
                     new THREE.BoxGeometry(anodeBand, halfy*2, halfz*2),
@@ -254,6 +254,7 @@ class OP {
             if (this.store.experiment.name == "sbnd"
                 || this.store.experiment.name == "protodunehd"
                 || this.store.experiment.name == "protodunevd"
+                || this.store.experiment.name == "dunefdvd-1x8x14"
                 || this.store.experiment.name == "icarus") {
                 for (let i=0; i<nDet; i++) {
                     if (this.store.experiment.opTPC(i) != iTPC) continue;
@@ -281,7 +282,9 @@ class OP {
                             new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        if (location[i][4] == 1) { xara.rotation.x = Math.PI / 2; } else { xara.rotation.y = Math.PI / 2; }
+                        // orient 1 = lateral (+-y) wall; 2 = z-end wall (plane already faces +-z); else face +-x
+                        if (location[i][4] == 1) { xara.rotation.x = Math.PI / 2; }
+                        else if (location[i][4] != 2) { xara.rotation.y = Math.PI / 2; }
                         xara.position.set(...exp.toLocalXYZ(sox, location[i][1], location[i][2]));
                         group.add(xara);
                     }
@@ -368,7 +371,8 @@ class OP {
                             else if (location[i][4] != 2) { circle_pred.rotation.y = Math.PI / 2; }
                             let sox = location[i][0]+shiftX; // shifted op x location
                             if (this.store.experiment.name == "protodunehd"
-                                || this.store.experiment.name == "protodunevd") {
+                                || this.store.experiment.name == "protodunevd"
+                                || this.store.experiment.name == "dunefdvd-1x8x14") {
                                 // Offset the predicted (green) circle off the measured (red) one so
                                 // they don't overlap, staying in the detector's own plane (sign keyed
                                 // off the detector's drift side so the two opposing planes fan apart):

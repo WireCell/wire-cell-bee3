@@ -166,7 +166,8 @@ class Helper {
             this.show(this.store.config.helper.showPD, this.pd);
         }
         else if (exp.name == 'icarus' || exp.name == 'sbnd'
-                 || exp.name == 'protodunehd' || exp.name == 'protodunevd') {
+                 || exp.name == 'protodunehd' || exp.name == 'protodunevd'
+                 || exp.name == 'dunefdvd-1x8x14') {
             let location = this.store.experiment.op.location;
             let nDet = this.store.experiment.op.nDet;
             if (null == this.pd) { // init if not exist
@@ -201,7 +202,9 @@ class Helper {
                             new THREE.EdgesGeometry(new THREE.PlaneGeometry(10, 7.5)),
                             new THREE.LineBasicMaterial({color: 0xbbbbbb})
                         );
-                        if (location[i][4] == 1) { xara.rotation.x = Math.PI / 2; } else { xara.rotation.y = Math.PI / 2; }
+                        // orient 1 = lateral (+-y) wall; 2 = z-end wall (plane already faces +-z); else face +-x
+                        if (location[i][4] == 1) { xara.rotation.x = Math.PI / 2; }
+                        else if (location[i][4] != 2) { xara.rotation.y = Math.PI / 2; }
                         xara.position.set(...exp.toLocalXYZ(location[i][0], location[i][1], location[i][2]));
                         this.pd.add(xara);
                     }
